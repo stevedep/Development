@@ -1,0 +1,216 @@
+install.packages("tm", lib="C:/TFS/Rlib/",dependencies=TRUE)
+install.packages("NLP", lib="C:/TFS/Rlib/",dependencies=TRUE)
+install.packages("slam", lib="C:/TFS/Rlib/",dependencies=TRUE)
+install.packages("SnowballC", lib="C:/TFS/Rlib/",dependencies=TRUE)
+install.packages("tau", lib="C:/TFS/Rlib/",dependencies=TRUE)
+install.packages("ngram", lib="C:/TFS/Rlib/",dependencies=TRUE)
+install.packages("data.table", lib="C:/TFS/Rlib/",dependencies=TRUE)
+
+
+install.packages("C:/TFS/R Development/Capstone/slam_0.1-37.tar.gz", repos = NULL, type = "source", lib="C:/TFS/Rlib/")
+
+library(NLP,  lib.loc="C:/TFS/Rlib/")
+library(tm,  lib.loc="C:/TFS/Rlib/")
+library(SnowballC,  lib.loc="C:/TFS/Rlib/")
+library(tau,  lib.loc="C:/TFS/Rlib/")
+library(ngram,  lib.loc="C:/TFS/Rlib/")
+#library(data.table,  lib.loc="C:/TFS/Rlib/")
+library(reshape,  lib.loc="C:/TFS/Rlib/")
+
+con <- file("files/final/en_US/en_US.twitter.txt", "r") 
+txt = readLines(con, 1) 
+
+docs <- c("This is a about stems stemmer stemming stemmed tree house car catty catlike because text.", "This another one.")
+test =  VCorpus(VectorSource(docs))
+str(test)
+inspect(test[1:2])
+
+meta(test[[1]], "id")
+writeLines(as.character(test[[1]]))
+
+#reut21578 <- system.file("texts", "crude", package = "tm")
+
+#whitespace
+remove_whitespace = tm_map(test, stripWhitespace)
+writeLines(as.character(remove_whitespace[[1]]))
+
+#lower case
+lower_case = tm_map(test, content_transformer(tolower))
+writeLines(as.character(lower_case[[1]]))
+
+#stop words
+stop_words = tm_map(test, removeWords, stopwords("english"))
+writeLines(as.character(stop_words[[1]]))
+
+#stemming
+stem_text =  tm_map(lower_case, stemDocument)
+writeLines(as.character(stem_text[[1]]))
+
+#term matrix
+docs <- c("A B A C A B B A B")
+test =  VCorpus(VectorSource(docs))
+dtm <- DocumentTermMatrix(test)
+dim(dtm)
+inspect(dtm[1:1])
+head(dtm)
+
+#ngram
+data = as.character(stem_text[[1]])
+bigram_tau <- textcnt(data, n = 2L, method = "string", recursive = TRUE)
+data.frame(counts = unclass(bigram_tau), size = nchar(names(bigram_tau)))
+format(r)
+
+
+ng <- ngram(str, n=2)
+ng = ngram_asweka(str, min=2, max=2)
+N4T <- table(ng)
+
+wordcount(ng, sep = " ", count.function = sum)
+
+#######################################
+
+#dit is goed! LET OP SPATIES RONDOM PUNT, NOG BETER AFHANDELEN
+str <- "gaan we.gaan we lopen.waar gaan we shoppen.waar gaan we heen.we shoppen ons gek"
+
+splitter<-function(x) {strsplit(x, "\\.")}
+
+#Split into lists of sentences
+asplit<-splitter(str)
+dfr = data.frame(asplit, stringsAsFactors = F)
+colnames(dfr) = "zin"
+zinnen = cbind(words = apply(dfr, 1, wordcount), dfr)
+
+#################################
+########################################
+########################################
+#nu met loop
+r = 1
+#str(zinnen)
+#alles met minimaal 3 woorden
+driew = data.frame(zinnen[zinnen$words>2,2], stringsAsFactors = F)
+for (z in 1:length(driew[,1])) {
+  y = data.frame(x = data.frame(get.phrasetable(ngram(driew[z,], n=3, sep=" ")))[,1], stringsAsFactors = F)
+  j = length(y[,1])
+    for (i in 1:j) {
+      print(y[i,1])
+       df[r,] <- y[i,1]
+       r <- r + 1
+      }
+}
+
+head(df)
+
+############################################
+############################################
+############################################
+
+ngram(zinnen[2,2], n=3, sep=" ")
+
+
+#y = data.frame(data.frame(get.phrasetable(ngram(z, n=3, sep=" ")))[,1])
+#colnames(y) = c("ng")
+#y
+#   j = length(y[,1])
+#   for (i in j) {
+#     df[r,] <- y[i,2]
+#     r <- r + 1
+#     }
+
+
+
+remove(asplit)
+remove(zinnen)
+
+#bi gram
+ng <- ngram(str)#, n=2, sep=" ")
+
+
+ng4 <<- apply(data.frame(dfr[dfr$words>3,2]), 1, ngram)
+
+x = data.frame(dfr[2,2])
+y = data.frame(data.frame(get.phrasetable(ngram(x, n=3, sep=" ")))[,1])
+
+
+r = 1
+df <- data.frame(x = numeric(1000), y = character(1000), stringsAsFactors = FALSE)
+df <- data.frame(y = character(1000), stringsAsFactors = FALSE)
+View(df)
+
+r = 1
+add_ngrams = function(x, df, r) {
+  y = data.frame(data.frame(get.phrasetable(ngram(x, n=3, sep=" ")))[,1])
+  colnames(y) = c("ng")
+  j = length(y[,1])
+  for (i in j) {
+    df[r,] <- y[i,2]
+    r <- r + 1
+  }
+  df
+}
+# scoping werkt tegen, met for loop...
+apply(zinnen, 1, add_ngrams, df=df, r=r)
+head(df)
+
+zinnen = data.frame(dfr[dfr$words>2,2], stringsAsFactors = F)
+colnames(zinnen) = "zin"
+dff <- data.frame(y = character(1000), stringsAsFactors = FALSE)
+
+
+
+
+
+
+
+x <- cbind(x1 = 3, x2 = c(4:1, 2:5))
+dimnames(x)[[1]] <- letters[1:8]
+apply(x, 2, mean, trim = .2)
+col.sums <- apply(x, 2, sum)
+row.sums <- apply(x, 1, sum)
+rbind(cbind(x, Rtot = row.sums), Ctot = c(col.sums, sum(col.sums)))
+
+cave <- function(x, c1, c2) c(mean(x[c1]), mean(x[c2]))
+apply(x, 1, cave,  c1 = "x1", c2 = c("x1","x2"))
+
+# 3 grams
+
+
+)
+head(df)
+
+ngram(dfr[dfr$words>3,2])
+sapply(sentences, wordcount)
+lapply(ng4, get.phrasetable)
+
+
+pt <- data.frame(get.phrasetable(ng))
+df2 = data.frame(transform(pt, pt = colsplit(ngrams, split = " ", names = c('w1', 'w2'))))
+df2
+df2[df2$pt.w1=="A",]
+
+#tri gram
+ng <- ngram(str, n=3, sep=" ")
+pt <- data.frame(get.phrasetable(ng))
+df3 = data.frame(transform(pt, pt = colsplit(ngrams, split = " ", names = c('w1', 'w2', 'w3'))))
+df3
+df3[df3$pt.w1=="A",]
+
+#4 gram
+ng <- ngram(str, n=4, sep=" ")
+pt <- data.frame(get.phrasetable(ng))
+df4 = data.frame(transform(pt, pt = colsplit(ngrams, split = " ", names = c('w1', 'w2', 'w3', 'w4'))))
+df4
+df4[df4$pt.w1=="A",]
+
+
+
+#######################################
+
+text <- "good qualiti dog food bought sever vital can dog food product found good qualiti product look like stew process meat smell better labrador finicki appreci product better"
+
+ng <- ngram(text)
+(get.phrasetable(ng))
+wordcount(ng, sep = " ", count.function = sum)
+wordcount(ng)
+dtm <- DocumentTermMatrix(ng)
+dim(dtm)
+inspect(dtm[1:2, 1:9])
