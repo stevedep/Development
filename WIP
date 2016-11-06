@@ -10,6 +10,7 @@ install.packages("data.table", lib="C:/TFS/Rlib/",dependencies=TRUE)
 install.packages("C:/TFS/R Development/Capstone/slam_0.1-37.tar.gz", repos = NULL, type = "source", lib="C:/TFS/Rlib/")
 
 library(NLP,  lib.loc="C:/TFS/Rlib/")
+library(data.table,  lib.loc="C:/TFS/Rlib/")
 library(tm,  lib.loc="C:/TFS/Rlib/")
 library(SnowballC,  lib.loc="C:/TFS/Rlib/")
 library(tau,  lib.loc="C:/TFS/Rlib/")
@@ -70,8 +71,7 @@ wordcount(ng, sep = " ", count.function = sum)
 #######################################
 
 #dit is goed! LET OP SPATIES RONDOM PUNT, NOG BETER AFHANDELEN
-str <- "gaan we.gaan we lopen.waar gaan we shoppen.waar gaan we heen.we shoppen ons gek"
-
+str <- "gaan we.gaan we lopen.waar gaan we shoppen.waar gaan we heen.we shoppen ons gek.waar gaan we heen."
 splitter<-function(x) {strsplit(x, "\\.")}
 
 #Split into lists of sentences
@@ -80,25 +80,31 @@ dfr = data.frame(asplit, stringsAsFactors = F)
 colnames(dfr) = "zin"
 zinnen = cbind(words = apply(dfr, 1, wordcount), dfr)
 
-#################################
-########################################
-########################################
 #nu met loop
 r = 1
-#str(zinnen)
 #alles met minimaal 3 woorden
 driew = data.frame(zinnen[zinnen$words>2,2], stringsAsFactors = F)
+df <- data.frame(w1 = character(1000),w2 = character(1000),w3 = character(1000), stringsAsFactors = FALSE)
 for (z in 1:length(driew[,1])) {
-  y = data.frame(x = data.frame(get.phrasetable(ngram(driew[z,], n=3, sep=" ")))[,1], stringsAsFactors = F)
+  pt = data.frame(get.phrasetable(ngram(driew[z,], n=3, sep=" ")),stringsAsFactors = F)
+  y = data.frame(transform(pt, pt = colsplit(ngrams, split = " ", names = c('w1', 'w2', 'w3'))), stringsAsFactors = F)
+  y[,4] = as.character(y[,4])
+  y[,5] = as.character(y[,5])
+  y[,6] = as.character(y[,6])
   j = length(y[,1])
     for (i in 1:j) {
-      print(y[i,1])
-       df[r,] <- y[i,1]
+       df[r,1:3] <- y[i,4:6]
        r <- r + 1
       }
 }
 
 head(df)
+
+#system.time(dt)
+dt=data.table(df[1:6,])
+dtw3 = dt[, .N, by='w1,w2,w3']
+dtw3[, count := .N, by='w1,w2']
+
 
 ############################################
 ############################################
@@ -123,6 +129,8 @@ remove(zinnen)
 
 #bi gram
 ng <- ngram(str)#, n=2, sep=" ")
+pt <- data.frame(get.phrasetable(ng))
+df2 = data.frame(transform(pt, pt = colsplit(ngrams, split = " ", names = c('w1', 'w2'))))
 
 
 ng4 <<- apply(data.frame(dfr[dfr$words>3,2]), 1, ngram)
@@ -154,12 +162,6 @@ head(df)
 zinnen = data.frame(dfr[dfr$words>2,2], stringsAsFactors = F)
 colnames(zinnen) = "zin"
 dff <- data.frame(y = character(1000), stringsAsFactors = FALSE)
-
-
-
-
-
-
 
 x <- cbind(x1 = 3, x2 = c(4:1, 2:5))
 dimnames(x)[[1]] <- letters[1:8]
