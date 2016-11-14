@@ -49,7 +49,7 @@ create_ngram_table = function(n, zinnen) {
   }
   dt=data.table(df[,])
   dtw = dt[, .N, by=c(names(dt)[1:n])]
-  dtw[, count := .N, by=c(names(dt)[1:n-1])][,prob:=N/count]
+  dtw[, count := .N, by=c(names(dt)[1:n-1])][,prob:=1/count]
   return(dtw)
 }
 
@@ -57,16 +57,24 @@ create_ngram_table = function(n, zinnen) {
 str <- "gaan we.gaan we lopen.waar gaan we shoppen.waar gaan we heen.we shoppen ons gek."
 zinnen = splitter(str)
 driegram = create_ngram_table(3,zinnen)
-tweengram = create_ngram_table(2,zinnen)
+driegram = driegram[!driegram$w1 == "",]
+tweegram = create_ngram_table(2,zinnen)
+tweegram = tweegram[!tweegram$w1 == "",]
 singlegram =create_ngram_table(1,zinnen)
+singlegram = singlegram[!singlegram$w1 == "",]
+singlegram[, count2 := sum(N)][, prob2:=N/count2]
 
 setkey(driegram,w2,w3)
 setkey(tweegram,w1,w2)
 
-driegram = driegram[tweengram]
+driegram = driegram[tweegram, nomatch=0]
+
+setkey(driegram,w3)
+setkey(singlegram,w1)
+
+driegram = driegram[singlegram, nomatch=0]
 
 
-tweengram[,b=1]
 
 #system.time(dt)
 dt=data.table(tweengram[,])
