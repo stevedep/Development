@@ -36,7 +36,7 @@ library(ggplot2,  lib.loc="C:/TFS/Rlib/")
 ```{r, eval=FALSE}
 #Twitter
 con <- file("files/final/en_US/en_US.twitter.txt", "r") 
-txt = readLines(con, n=100) 
+txt = readLines(con, n=500) 
 df_txt_twitter = data.frame(txt, stringsAsFactors = F) 
 close(con)
 
@@ -241,21 +241,25 @@ pt_df2 = top50(2,df_txt_twitter)
 pt2 = pt + geom_line(data=pt_df2[1:50,], aes(x=x, y=V1), color='red')
 pt2
 
+
+
+
+```
+
+```{r eval=F}
 pb_df = show_ngrams(1,df_txt_blog)
 pb = ggplot(pb_df, aes(x, V1, label = w1)) + geom_text()
 pb_df2 = top50(2,df_txt_blog)
 pb2 = pb + geom_line(data=pb_df2[1:50,], aes(x=x, y=V1), color='red')
 pb2
 
+
 pn_df = show_ngrams(1,df_txt_news)
 pn = ggplot(pn_df, aes(x, V1, label = w1)) + geom_text()
 pn_df2 = top50(2,df_txt_news)
 pn2 = pn + geom_line(data=pn_df2[1:50,], aes(x=x, y=V1), color='red')
 pn2
-
-
 ```
-
 
 
 When looking at these charts it becomes appearant that a small proportion of the words contribute to a large proportion of the words counts. Lets verify:
@@ -295,3 +299,40 @@ df2 = cbind(df2, pw)
 curve = ggplot(df2, aes(x=V1, y=pw)) + geom_line()
 curve
 ```
+
+The lift is greatest untill approx 20% of the top words. 
+
+lets show the same curve for bigrams.
+
+```{r}
+q2 = loop_doc(2,500, df_txt_twitter)
+q2 = q2[order(-V1),]
+
+q2n = cbind(nr = c(1:length(q2$w1)), q2)
+rt = sapply(1:length(q2$w1), function(x) sum(q2n[1:x]$V1))
+q2n2 = cbind(q2n, rt)
+t = sum(q2n$V1)
+prc = rt / t * 100
+prc = data.frame(pr = prc)
+dt = data.table(round(prc$pr))
+df = data.frame(dt[, .N, by=V1])
+rt = sapply(1:length(df$V1), function(x) sum(df[1:x,]$N))
+df2 = cbind(df, wf= rt)
+#prop of words
+pw = round(rt / max(rt) * 100)
+df2 = cbind(df2, pw)
+curve = ggplot(df2, aes(x=V1, y=pw)) + geom_line()
+curve
+```
+
+Hardly anly lift possible at all. We did load only a small dataset.
+
+#Next steps
+From the charts in this document we have learned that some words are used a lot. So there are probably a lot of synonyms. Relative to the number of words there are only few bigrams. The lift in the ROC curve is also way less compared to the ROC for the single word. 
+
+We this we can observe it will be difficult to get a high prediction accuracy. And building a prediction model with a large set of words will give little additional value to a model with fewer words. 
+
+##Design
+The design of the prediction model will use backoff. so when there is no match based on three words. A match will be made based on 2 words. 
+
+For f.e. the 3 words model, the bigram based on the last two words will also be included and given a weight. The predicted word based on both the tri- as the bigram will be used. 
