@@ -27,29 +27,29 @@ library(tm,  lib.loc="C:/TFS/Rlib/")
 library(labeling,  lib.loc="C:/TFS/Rlib/")
 library(textcat,  lib.loc="C:/TFS/Rlib/")
 library(ggplot2,  lib.loc="C:/TFS/Rlib/")
-
 ```
 
 ##Loading the data
+```{r}
+#number of lines we will process
+nl = 1000
 
-
-```{r, eval=FALSE}
 #Twitter
 con <- file("files/final/en_US/en_US.twitter.txt", "r") 
-txt = readLines(con, n=500) 
+txt = readLines(con, n=nl) 
 df_txt_twitter = data.frame(txt, stringsAsFactors = F) 
 close(con)
 
 #News
 con <- file("files/final/en_US/en_US.news.txt", "r") 
-txt = readLines(con, n=100) 
+txt = readLines(con, n=nl) 
 df_txt_news = data.frame(txt, stringsAsFactors = F) 
 close(con)
 
 
 #Blog
 con <- file("files/final/en_US/en_US.blogs.txt", "r") 
-txt = readLines(con, n=100) 
+txt = readLines(con, n=nl) 
 df_txt_blog = data.frame(txt, stringsAsFactors = F) 
 close(con)
 ```
@@ -58,6 +58,7 @@ close(con)
 
 ##View data
 
+The data looks like this.
 ```{r}
 #Twitter
 head(df_txt_twitter, 3)
@@ -70,8 +71,10 @@ head(df_txt_blog,3)
 ```
 
 ##Basic stats
+In this chapter we will get some basic statistics on the three files. 
 
-Count_lines and Count_words function
+###Supporting functions. 
+We will count the number of words and number of lines with two custom functions. 
 ```{r}
 count_lines<-function(x) {
   dfr = data.frame(strsplit(x, "\\. |\\? "), stringsAsFactors = F)
@@ -89,45 +92,35 @@ count_words<-function(x) {
 ```
 
 ###Total and average number of words Twitter
-
 ```{r}
-l = sum(apply(head(df_txt_twitter, 3),1,count_lines))
-w = sum(apply(head(df_txt_twitter, 3),1,count_words))
-#lines
-l
-#words
-w
-#mean number of words:
-w/l
+l = sum(apply(df_txt_twitter),1,count_lines))
+w = sum(apply(df_txt_twitter),1,count_words))
 ```
+
+The twitter file has `r l` lines. And `r w` words. So the average number of words per line is: `r w/l`. 
 
 ###Total and average number of words Blogs
 
 ```{r}
-l = sum(apply(head(df_txt_blog, 3),1,count_lines))
-w = sum(apply(head(df_txt_blog, 3),1,count_words))
-#lines
-l
-#words
-w
-#mean number of words:
-w/l
+l = sum(apply(df_txt_blog),1,count_lines))
+w = sum(apply(df_txt_blog),1,count_words))
 ```
+
+The Blog file has `r l` lines. And `r w` words. So the average number of words per line is: `r w/l`. 
 
 ###Total and average number of words News
 
 ```{r}
-l = sum(apply(head(df_txt_news, 3),1,count_lines))
-w = sum(apply(head(df_txt_news, 3),1,count_words))
-#lines
-l
-#words
-w
-#mean number of words:
-w/l
+l = sum(apply(df_txt_news),1,count_lines))
+w = sum(apply(df_txt_news),1,count_words))
 ```
 
+The News file has `r l` lines. And `r w` words. So the average number of words per line is: `r w/l`. 
+
 ##Features of the data
+
+The chapter will look at frequency of singlegrams and bigrams. 
+
 ```{r echo=F}
 splitter<-function(x) {
   dfr = data.frame(strsplit(x, "\\. |\\? "), stringsAsFactors = F)
@@ -216,8 +209,8 @@ loop_doc_lang = function(d) {
 ```
 
 ###Frequency of singlegrams
-
-```{r}
+The supporing function.
+```{r, echo=F}
 top50 =  function(n,df) {
   dfCorpus = Corpus(VectorSource(df))
   lower_case = tm_map(dfCorpus, content_transformer(tolower))
@@ -235,18 +228,22 @@ top50 =  function(n,df) {
   z = data.frame(cbind(x,top50))
   z
 }
-pt_df = top50(1,df_txt_twitter)
-pt = ggplot(pt_df, aes(x, V1, label = w1)) + geom_text()
-pt_df2 = top50(2,df_txt_twitter)
-pt2 = pt + geom_line(data=pt_df2[1:50,], aes(x=x, y=V1), color='red')
-pt2
-
-
 
 
 ```
 
-```{r eval=F}
+The ngram chart. With singlegrams (words) and bigrams (red line) from the twitter file.
+
+```{r}
+pt_df = top50(1,df_txt_twitter)
+pt = ggplot(pt_df, aes(x, V1, label = w1)) + geom_text() 
+pt_df2 = top50(2,df_txt_twitter)
+pt2 = pt + geom_line(data=pt_df2[1:50,], aes(x=x, y=V1), color='red') +
+  ggtitle("ngrams frequency chart") + xlab("ngram") + ylab("Frequency")
+pt2
+```
+
+```{r, eval=F}
 pb_df = show_ngrams(1,df_txt_blog)
 pb = ggplot(pb_df, aes(x, V1, label = w1)) + geom_text()
 pb_df2 = top50(2,df_txt_blog)
@@ -261,51 +258,72 @@ pn2 = pn + geom_line(data=pn_df2[1:50,], aes(x=x, y=V1), color='red')
 pn2
 ```
 
-
 When looking at these charts it becomes appearant that a small proportion of the words contribute to a large proportion of the words counts. Lets verify:
 
-```{r}
-q1 = loop_doc(1,100, df_txt_twitter)
-q1 = q1[order(-V1),]
+```{r, echo=F}
+runningt_perc = function(ds) {
+  q1 = ds[order(-V1),]
+  q1n = cbind(nr = c(1:length(q1$w1)), q1)
+  rt = sapply(1:length(q1$w1), function(x) sum(q1n[1:x]$V1))
+  q1n2 = cbind(q1n, rt)
+  t = sum(q1n2$V1, na.rm=TRUE)
+  prc = rt / t * 100
+  prc = data.frame(pr = prc)
+  prc
+}
+```
 
-q1n = cbind(nr = c(1:length(q1$w1)), q1)
-rt = sapply(1:length(q1$w1), function(x) sum(q1n[1:x]$V1))
-q1n2 = cbind(q1n, rt)
-t = sum(q1n$V1)
-prc = rt / t * 100
-prc = data.frame(pr = prc)
+```{r}
+q1 = loop_doc(1,nl, df_txt_twitter)
+prc = runningt_perc(q1)
 l = length(prc[prc$pr < 50.1,]) / length(prc[,]) * 100
 l
 ```
 
-We only need `l` procent of the words to get to 50% of the  frequency count. Lets see how much we need to get to 90%:
+We only need `r l` procent of the words to get to 50% of the  frequency count. Lets see how much we need to get to 90%:
 
 ```{r}
 l = length(prc[prc$pr < 90.1,]) / length(prc[,]) * 100
 l
 ```
 
-The y axis shows the percentage of words the x axis shows the percentage of the word count. 
+###Chart with percentage of words and percentage of frequency
+The x axis shows the percentage of words the y axis shows the percentage of the word count. 
+
+```{r, echo=F}
+f_bins = function(ds) {
+  dt = data.table(round(ds$pr))
+  df = data.frame(dt[, .N, by=V1])
+  rt = sapply(1:length(df$V1), function(x) sum(df[1:x,]$N))
+  df2 = cbind(df, wf= rt)
+  #prop of words
+  pw = round(rt / max(rt) * 100)
+  df2 = cbind(df2, pw)
+  df2
+}
+```
 
 
 ```{r}
-dt = data.table(round(prc$pr))
-df = data.frame(dt[, .N, by=V1])
-rt = sapply(1:length(df$V1), function(x) sum(df[1:x,]$N))
-df2 = cbind(df, wf= rt)
-#prop of words
-pw = round(rt / max(rt) * 100)
-df2 = cbind(df2, pw)
-curve = ggplot(df2, aes(x=V1, y=pw)) + geom_line()
-curve
+df2 = f_bins(prc)
+curve = ggplot(df2, aes(x=pw, y=V1)) + geom_line()
 ```
 
-The lift is greatest untill approx 20% of the top words. 
+Add the max lift point:
+```{r}
+m = max(df2$V1 - df2$pw, na.rm=T)
+p = match(m, df2$V1 - df2$pw)
+curve + geom_point(data=df2[p,], aes(x=pw, y=V1), color='green', size=8)
+```
+
+The lift is greatest untill approx `r df2[p,]$pw`% of the top words. 
 
 lets show the same curve for bigrams.
 
 ```{r}
-q2 = loop_doc(2,500, df_txt_twitter)
+
+q2 = loop_doc(2,nl, df_txt_twitter)
+
 q2 = q2[order(-V1),]
 
 q2n = cbind(nr = c(1:length(q2$w1)), q2)
@@ -314,6 +332,7 @@ q2n2 = cbind(q2n, rt)
 t = sum(q2n$V1)
 prc = rt / t * 100
 prc = data.frame(pr = prc)
+
 dt = data.table(round(prc$pr))
 df = data.frame(dt[, .N, by=V1])
 rt = sapply(1:length(df$V1), function(x) sum(df[1:x,]$N))
@@ -324,6 +343,16 @@ df2 = cbind(df2, pw)
 curve = ggplot(df2, aes(x=V1, y=pw)) + geom_line()
 curve
 ```
+
+
+```{r}
+m = max(df2$V1 - df2$pw, na.rm=T)
+p = match(m, df2$V1 - df2$pw)
+curve + geom_point(data=df2[p,], aes(x=pw, y=V1), color='green', size=8)
+```
+
+The lift is greatest untill approx `r df2[p,]$pw`% of the top words. 
+
 
 Hardly anly lift possible at all. We did load only a small dataset.
 
