@@ -37,19 +37,21 @@ nl = 1000
 #Twitter
 con <- file("files/final/en_US/en_US.twitter.txt", "r") 
 txt = readLines(con, n=nl) 
-df_txt_twitter = data.frame(txt, stringsAsFactors = F) 
 close(con)
+df_txt_twitter = data.frame(txt, stringsAsFactors = F) 
+#to lowercase
+df_txt_twitter = data.frame(txt = apply(df_txt_twitter,1, tolower), stringsAsFactors = F)
 
 #News
 con <- file("files/final/en_US/en_US.news.txt", "r") 
-txt = readLines(con, n=nl) 
+txt = readLines(con, n=10) 
 df_txt_news = data.frame(txt, stringsAsFactors = F) 
 close(con)
 
 
 #Blog
 con <- file("files/final/en_US/en_US.blogs.txt", "r") 
-txt = readLines(con, n=nl) 
+txt = readLines(con, n=10) 
 df_txt_blog = data.frame(txt, stringsAsFactors = F) 
 close(con)
 ```
@@ -93,8 +95,8 @@ count_words<-function(x) {
 
 ###Total and average number of words Twitter
 ```{r}
-l = sum(apply(df_txt_twitter),1,count_lines))
-w = sum(apply(df_txt_twitter),1,count_words))
+l = sum(apply(df_txt_twitter,1,count_lines))
+w = sum(apply(df_txt_twitter,1,count_words))
 ```
 
 The twitter file has `r l` lines. And `r w` words. So the average number of words per line is: `r w/l`. 
@@ -102,8 +104,8 @@ The twitter file has `r l` lines. And `r w` words. So the average number of word
 ###Total and average number of words Blogs
 
 ```{r}
-l = sum(apply(df_txt_blog),1,count_lines))
-w = sum(apply(df_txt_blog),1,count_words))
+l = sum(apply(df_txt_blog,1,count_lines))
+w = sum(apply(df_txt_blog,1,count_words))
 ```
 
 The Blog file has `r l` lines. And `r w` words. So the average number of words per line is: `r w/l`. 
@@ -111,8 +113,8 @@ The Blog file has `r l` lines. And `r w` words. So the average number of words p
 ###Total and average number of words News
 
 ```{r}
-l = sum(apply(df_txt_news),1,count_lines))
-w = sum(apply(df_txt_news),1,count_words))
+l = sum(apply(df_txt_news,1,count_lines))
+w = sum(apply(df_txt_news,1,count_words))
 ```
 
 The News file has `r l` lines. And `r w` words. So the average number of words per line is: `r w/l`. 
@@ -208,42 +210,38 @@ loop_doc_lang = function(d) {
 
 ```
 
-###Frequency of singlegrams
+###Creating ngrams
+```{r}
+singlegram_twitter = loop_doc(1,nl,df_txt_twitter)
+bigrams_twitter = loop_doc(2,nl,df_txt_twitter)
+```
+
+###Frequency of ngrams
 The supporing function.
 ```{r, echo=F}
-top50 =  function(n,df) {
-  dfCorpus = Corpus(VectorSource(df))
-  lower_case = tm_map(dfCorpus, content_transformer(tolower))
-  
-  dataframe<-data.frame(text=unlist(sapply(lower_case, `[`, "content")), 
-                        stringsAsFactors=F)
-  
-  #Some words are more frequent than others - what are the distributions of word frequencies?
-  q1 = loop_doc(n,100,dataframe)
-  y = head(sort(q1$V1,decreasing=TRUE), n = 50)
-  top50 = q1[q1$V1 %in% y,]
+top50 =  function(df) {
+  y = head(sort(df$V1,decreasing=TRUE), n = 50)
+  top50 = df[df$V1 %in% y,]
   top50 = top50[order(-V1),] 
   
   x = c(1:length(top50$w1))
   z = data.frame(cbind(x,top50))
   z
 }
-
-
 ```
 
 The ngram chart. With singlegrams (words) and bigrams (red line) from the twitter file.
 
 ```{r}
-pt_df = top50(1,df_txt_twitter)
+pt_df = top50(singlegram_twitter)
 pt = ggplot(pt_df, aes(x, V1, label = w1)) + geom_text() 
-pt_df2 = top50(2,df_txt_twitter)
+pt_df2 = top50(bigrams_twitter)
 pt2 = pt + geom_line(data=pt_df2[1:50,], aes(x=x, y=V1), color='red') +
   ggtitle("ngrams frequency chart") + xlab("ngram") + ylab("Frequency")
 pt2
 ```
 
-```{r, eval=F}
+```{r, eval=F, echo=F}
 pb_df = show_ngrams(1,df_txt_blog)
 pb = ggplot(pb_df, aes(x, V1, label = w1)) + geom_text()
 pb_df2 = top50(2,df_txt_blog)
@@ -274,8 +272,7 @@ runningt_perc = function(ds) {
 ```
 
 ```{r}
-q1 = loop_doc(1,nl, df_txt_twitter)
-prc = runningt_perc(q1)
+prc = runningt_perc(singlegram_twitter)
 l = length(prc[prc$pr < 50.1,]) / length(prc[,]) * 100
 l
 ```
@@ -313,7 +310,7 @@ Add the max lift point:
 ```{r}
 m = max(df2$V1 - df2$pw, na.rm=T)
 p = match(m, df2$V1 - df2$pw)
-curve + geom_point(data=df2[p,], aes(x=pw, y=V1), color='green', size=8)
+curve = curve + geom_point(data=df2[p,], aes(x=pw, y=V1), color='green', size=8)
 ```
 
 The lift is greatest untill approx `r df2[p,]$pw`% of the top words. 
@@ -321,45 +318,23 @@ The lift is greatest untill approx `r df2[p,]$pw`% of the top words.
 lets show the same curve for bigrams.
 
 ```{r}
-
-q2 = loop_doc(2,nl, df_txt_twitter)
-
-q2 = q2[order(-V1),]
-
-q2n = cbind(nr = c(1:length(q2$w1)), q2)
-rt = sapply(1:length(q2$w1), function(x) sum(q2n[1:x]$V1))
-q2n2 = cbind(q2n, rt)
-t = sum(q2n$V1)
-prc = rt / t * 100
-prc = data.frame(pr = prc)
-
-dt = data.table(round(prc$pr))
-df = data.frame(dt[, .N, by=V1])
-rt = sapply(1:length(df$V1), function(x) sum(df[1:x,]$N))
-df2 = cbind(df, wf= rt)
-#prop of words
-pw = round(rt / max(rt) * 100)
-df2 = cbind(df2, pw)
-curve = ggplot(df2, aes(x=V1, y=pw)) + geom_line()
+prc2 = runningt_perc(bigrams_twitter)
+df3 = f_bins(prc2)
+curve = curve + geom_line(data=df3, aes(x=pw, y=V1), color="red")
+m = max(df3$V1 - df3$pw, na.rm=T)
+p = match(m, df3$V1 - df3$pw)
+curve = curve + geom_point(data=df3[p,], aes(x=pw, y=V1), color='red', size=7)
+curve = curve + 
+  ggtitle("ngrams ROC frequency chart, with single and bigram") + xlab("ngram perc.") + ylab("Frequency perc.")
 curve
 ```
 
-
-```{r}
-m = max(df2$V1 - df2$pw, na.rm=T)
-p = match(m, df2$V1 - df2$pw)
-curve + geom_point(data=df2[p,], aes(x=pw, y=V1), color='green', size=8)
-```
-
-The lift is greatest untill approx `r df2[p,]$pw`% of the top words. 
-
-
-Hardly anly lift possible at all. We did load only a small dataset.
+The lift is greatest untill approx `r df3[p,]$pw`% of the top words for the bigrams. 
 
 #Next steps
-From the charts in this document we have learned that some words are used a lot. So there are probably a lot of synonyms. Relative to the number of words there are only few bigrams. The lift in the ROC curve is also way less compared to the ROC for the single word. 
+From the charts in this document we have learned that a few words are used a lot. So there are probably a lot of synonyms. Relative to the number of words there are only few bigrams. The lift in the ROC curve is also way less compared to the ROC for the single word. 
 
-We this we can observe it will be difficult to get a high prediction accuracy. And building a prediction model with a large set of words will give little additional value to a model with fewer words. 
+With this we can observe it will be difficult to get a high prediction accuracy. And building a prediction model with a large set of words will give little additional value to a model with fewer words. 
 
 ##Design
 The design of the prediction model will use backoff. so when there is no match based on three words. A match will be made based on 2 words. 
