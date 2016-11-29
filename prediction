@@ -1,0 +1,405 @@
+---
+title: "Milestone Report - Capstone"
+author: "Steve de Peijper"
+date: "26 november 2016"
+output: html_document
+---
+
+The document describes the intermediate results of the capstone project. In this project text data is loaded, analyzed and used to build a test prediction model. 
+
+This document consists of:
+1. loading the data
+2. exploring the data
+3. next steps
+
+#Loading the libs and data
+
+##Loading libs
+
+The data table package is used to transform and filter data with high performance. NLP is used for wordcount. tm for loading docs and to transform to lower case. ngram to find the ngrams. ggplot and labling for the graphs. 
+
+```{r}
+library(data.table,  lib.loc="C:/TFS/Rlib/")
+library(ngram,  lib.loc="C:/TFS/Rlib/")
+library(reshape,  lib.loc="C:/TFS/Rlib/")
+library(NLP,  lib.loc="C:/TFS/Rlib/")
+library(tm,  lib.loc="C:/TFS/Rlib/")
+library(labeling,  lib.loc="C:/TFS/Rlib/")
+library(textcat,  lib.loc="C:/TFS/Rlib/")
+library(ggplot2,  lib.loc="C:/TFS/Rlib/")
+#install.packages("parallel", lib="C:/TFS/Rlib/",dependencies=TRUE)
+library(parallel,  lib.loc="C:/TFS/Rlib/")
+
+
+
+install.packages("foreach", lib="C:/TFS/Rlib/",dependencies=TRUE)
+library(foreach,  lib.loc="C:/TFS/Rlib/")
+
+install.packages("doParallel", lib="C:/TFS/Rlib/",dependencies=TRUE)
+library(doParallel,  lib.loc="C:/TFS/Rlib/")
+
+install.packages("iterators", lib="C:/TFS/Rlib/",dependencies=TRUE)
+library(iterators,  lib.loc="C:/TFS/Rlib/")
+
+
+
+```
+
+##Loading the data
+```{r}
+#number of lines we will process
+nl = 100
+
+#Twitter
+con <- file("files/final/en_US/en_US.twitter.txt", "r") 
+txt = readLines(con, n=nl) 
+close(con)
+df_txt_twitter = data.frame(txt, stringsAsFactors = F) 
+#to lowercase
+df_txt_twitter = data.frame(txt = apply(df_txt_twitter,1, tolower), stringsAsFactors = F)
+
+#News
+con <- file("files/final/en_US/en_US.news.txt", "r") 
+txt = readLines(con, n=10) 
+df_txt_news = data.frame(txt, stringsAsFactors = F) 
+close(con)
+
+
+#Blog
+con <- file("files/final/en_US/en_US.blogs.txt", "r") 
+txt = readLines(con, n=10) 
+df_txt_blog = data.frame(txt, stringsAsFactors = F) 
+close(con)
+```
+
+#Explore data
+
+##View data
+
+The data looks like this.
+```{r}
+#Twitter
+head(df_txt_twitter, 3)
+
+#News
+head(df_txt_news, 3)
+
+#Blog
+head(df_txt_blog,3)
+```
+
+##Basic stats
+In this chapter we will get some basic statistics on the three files. 
+
+###Supporting functions. 
+We will count the number of words and number of lines with two custom functions. 
+```{r}
+count_lines<-function(x) {
+  dfr = data.frame(strsplit(x, "\\. |\\? "), stringsAsFactors = F)
+  colnames(dfr) = "zin"
+  zinnen = cbind(words = apply(dfr, 1, wordcount), dfr)
+  length(zinnen$zin)
+}
+
+count_words<-function(x) {
+  dfr = data.frame(strsplit(x, "\\. |\\? "), stringsAsFactors = F)
+  colnames(dfr) = "zin"
+  zinnen = cbind(words = apply(dfr, 1, wordcount), dfr)
+  sum(zinnen$words)
+}
+```
+
+###Total and average number of words Twitter
+```{r}
+l = sum(apply(df_txt_twitter,1,count_lines))
+w = sum(apply(df_txt_twitter,1,count_words))
+```
+
+The twitter file has `r l` lines. And `r w` words. So the average number of words per line is: `r w/l`. 
+
+###Total and average number of words Blogs
+
+```{r}
+l = sum(apply(df_txt_blog,1,count_lines))
+w = sum(apply(df_txt_blog,1,count_words))
+```
+
+The Blog file has `r l` lines. And `r w` words. So the average number of words per line is: `r w/l`. 
+
+###Total and average number of words News
+
+```{r}
+l = sum(apply(df_txt_news,1,count_lines))
+w = sum(apply(df_txt_news,1,count_words))
+```
+
+The News file has `r l` lines. And `r w` words. So the average number of words per line is: `r w/l`. 
+
+##Features of the data
+
+The chapter will look at frequency of singlegrams and bigrams. 
+
+```{r echo=F}
+splitter<-function(x) {
+  dfr = data.frame(strsplit(x, "\\. |\\? "), stringsAsFactors = F)
+  colnames(dfr) = "zin"
+  zinnen = cbind(words = 1, dfr)
+  return(zinnen)
+}
+
+create_ngram_table = function(n, zinnen) {
+  r = 1
+  #create result data frame
+  df <- data.frame(freq = integer(1000), w1 = character(1000),w2 = character(1000),
+                   w3 = character(1000),w4 = character(1000),w5 = character(1000), stringsAsFactors = FALSE)
+  #use n words sentences only
+  nwords <- data.frame(zinnen[zinnen$words>n-1,2], stringsAsFactors = F)
+  if (length(nwords[,]) > 0 ) {
+    #loop trough sentences
+    for (z in 1:length(nwords[,1])) { #for each sentence
+      #get ngrams for sentence
+      pt = data.frame(get.phrasetable(ngram(nwords[z,], n=n, sep=" ")),stringsAsFactors = F)
+      #split in columns
+      y = data.frame(transform(pt, pt = colsplit(ngrams, split = " ", names = rep('w', n))), stringsAsFactors = F)
+      #convert new columns to character
+      for (a in 1:n) {
+        y[,a+3] = as.character(y[,a+3])  
+      }
+      
+      #add each ngram to result data frame
+      k = n+3
+      l = n+1
+      for (i in 1:length(y[,1])) {
+        df[r,1] <- y[i,2]
+        df[r,2:l] <- y[i,4:k]
+        r <- r + 1
+      }
+      
+    }
+  }
+  return(df)
+}
+
+loop_doc = function(a,d, df, s) {
+  # a: aantal woorden
+  # d: aantal rijen
+  # df: data frame
+  # s: start
+  r = 1
+    result <- data.frame(n = integer(2000000), w1 = character(2000000), w2 = character(2000000),
+                         w3 = character(2000000), w4 = character(2000000), w5 = character(2000000),
+                         stringsAsFactors = FALSE)
+  #loop door de documenten op te bouwen
+    for (i in s:d) {
+    str = df[i,]
+    zinnen = splitter(str)
+    xgram =create_ngram_table(a,zinnen)
+    xgram = xgram[!xgram$w1 == "",]
+    if (length(xgram[,1]) > 0 ) {
+      result[r:(r+length(xgram[,1])-1),] = xgram[,1:(a+1)]
+      r = r + length(xgram[,1])  
+      }
+  }
+  
+  result = result[!result$w1 == "",]
+  result_dt = data.table(result)
+  dtw = result_dt[, sum(n), by=c(names(result_dt)[2:(a+1)])]
+  return(dtw)
+}
+
+loop_doc_lang = function(d) {
+  r = 1
+  result <- data.frame(zin = character(2000000), lang = character(2000000),
+                       stringsAsFactors = FALSE)
+  #loop door de documenten op te bouwen
+  for (i in 1:d) {
+    str = dataframe[1,]
+    zinnen = splitter(str)
+    xlang = data.frame(l = textcat(zinnen$zin), stringsAsFactors = F)
+    
+    if (length(xlang[,1]) > 0 ) {
+      result[r:(r+length(xlang[,1])-1),1] = zinnen$zin
+      result[r:(r+length(xlang[,1])-1),2] = xlang[,1]
+      r = r + length(xlang[,1])  
+    }
+    #print(i)
+  }
+  result = result[!result$zin == "",]
+  return(result)
+}
+
+```
+
+###Creating ngrams
+```{r}
+singlegram_twitter = loop_doc(1,nl,df_txt_twitter)
+bigrams_twitter = loop_doc(2,nl,df_txt_twitter)
+trigrams_twitter = loop_doc(3,nl,df_txt_twitter)
+```
+
+
+parralel
+```{r}
+singlegram_twitter = loop_doc(1,10,df_txt_twitter,20)
+
+seq(1, 30, 10)
+
+
+# Calculate the number of cores
+no_cores <- detectCores() - 1
+ 
+# Initiate cluster
+cl <- makeCluster(no_cores)
+clusterExport(cl=cl, varlist=c("splitter", "create_ngram_table"))
+clusterExport(cl, library(tm, lib.loc="C:/TFS/Rlib/"))
+clusterExport(cl, require(ngram))
+clusterExport(cl, library(reshape, lib.loc="C:/TFS/Rlib/"))
+clusterExport(cl, library(ngram, lib.loc="C:/TFS/Rlib/"))
+clusterExport(cl, library(ggplot2))
+
+e = as.environment("package:ngram")
+e = as.environment("package:ngram")
+clusterExport(cl=cl, varlist=c("wordcount"), envir = e)
+e = as.environment("package:reshape")
+clusterExport(cl=cl, varlist=c("colsplit"), envir = e)
+
+
+
+parLapply(cl, df_txt_twitter[1:10,],
+          function(x) {
+            zinnen = splitter(x)
+            xgram =create_ngram_table(1,zinnen)
+            xgram = xgram[!xgram$w1 == "",]
+            xgram
+}
+)
+
+
+stopCluster(cl)
+
+```
+
+###Frequency of ngrams
+The supporing function.
+```{r, echo=F}
+top50 =  function(df) {
+  y = head(sort(df$V1,decreasing=TRUE), n = 50)
+  top50 = df[df$V1 %in% y,]
+  top50 = top50[order(-V1),] 
+  
+  x = c(1:length(top50$w1))
+  z = data.frame(cbind(x,top50))
+  z
+}
+```
+
+The ngram chart. With singlegrams (words) and bigrams (red line) from the twitter file.
+
+```{r}
+pt_df = top50(singlegram_twitter)
+pt = ggplot(pt_df, aes(x, V1, label = w1)) + geom_text() 
+pt_df2 = top50(bigrams_twitter)
+pt2 = pt + geom_line(data=pt_df2[1:50,], aes(x=x, y=V1), color='red') +
+  ggtitle("ngrams frequency chart") + xlab("ngram") + ylab("Frequency")
+pt2
+```
+
+```{r, eval=F, echo=F}
+pb_df = show_ngrams(1,df_txt_blog)
+pb = ggplot(pb_df, aes(x, V1, label = w1)) + geom_text()
+pb_df2 = top50(2,df_txt_blog)
+pb2 = pb + geom_line(data=pb_df2[1:50,], aes(x=x, y=V1), color='red')
+pb2
+
+
+pn_df = show_ngrams(1,df_txt_news)
+pn = ggplot(pn_df, aes(x, V1, label = w1)) + geom_text()
+pn_df2 = top50(2,df_txt_news)
+pn2 = pn + geom_line(data=pn_df2[1:50,], aes(x=x, y=V1), color='red')
+pn2
+```
+
+When looking at these charts it becomes appearant that a small proportion of the words contribute to a large proportion of the words counts. Lets verify:
+
+```{r, echo=F}
+runningt_perc = function(ds) {
+  q1 = ds[order(-V1),]
+  q1n = cbind(nr = c(1:length(q1$w1)), q1)
+  rt = sapply(1:length(q1$w1), function(x) sum(q1n[1:x]$V1))
+  q1n2 = cbind(q1n, rt)
+  t = sum(q1n2$V1, na.rm=TRUE)
+  prc = rt / t * 100
+  prc = data.frame(pr = prc)
+  prc
+}
+```
+
+```{r}
+prc = runningt_perc(singlegram_twitter)
+l = length(prc[prc$pr < 50.1,]) / length(prc[,]) * 100
+l
+```
+
+We only need `r l` procent of the words to get to 50% of the  frequency count. Lets see how much we need to get to 90%:
+
+```{r}
+l = length(prc[prc$pr < 90.1,]) / length(prc[,]) * 100
+l
+```
+
+###Chart with percentage of words and percentage of frequency
+The x axis shows the percentage of words the y axis shows the percentage of the word count. 
+
+```{r, echo=F}
+f_bins = function(ds) {
+  dt = data.table(round(ds$pr))
+  df = data.frame(dt[, .N, by=V1])
+  rt = sapply(1:length(df$V1), function(x) sum(df[1:x,]$N))
+  df2 = cbind(df, wf= rt)
+  #prop of words
+  pw = round(rt / max(rt) * 100)
+  df2 = cbind(df2, pw)
+  df2
+}
+```
+
+
+```{r}
+df2 = f_bins(prc)
+curve = ggplot(df2, aes(x=pw, y=V1)) + geom_line()
+```
+
+Add the max lift point:
+```{r}
+m = max(df2$V1 - df2$pw, na.rm=T)
+p = match(m, df2$V1 - df2$pw)
+curve = curve + geom_point(data=df2[p,], aes(x=pw, y=V1), color='green', size=8)
+```
+
+The lift is greatest untill approx `r df2[p,]$pw`% of the top words. 
+
+lets show the same curve for bigrams.
+
+```{r}
+prc2 = runningt_perc(bigrams_twitter)
+df3 = f_bins(prc2)
+curve = curve + geom_line(data=df3, aes(x=pw, y=V1), color="red")
+m = max(df3$V1 - df3$pw, na.rm=T)
+p = match(m, df3$V1 - df3$pw)
+curve = curve + geom_point(data=df3[p,], aes(x=pw, y=V1), color='red', size=7)
+curve = curve + 
+  ggtitle("ngrams ROC frequency chart, with single and bigram") + xlab("ngram perc.") + ylab("Frequency perc.")
+curve
+```
+
+The lift is greatest untill approx `r df3[p,]$pw`% of the top words for the bigrams. 
+
+#Next steps
+From the charts in this document we have learned that a few words are used a lot. So there are probably a lot of synonyms. Relative to the number of words there are only few bigrams. The lift in the ROC curve is also way less compared to the ROC for the single word. 
+
+With this we can observe it will be difficult to get a high prediction accuracy. And building a prediction model with a large set of words will give little additional value to a model with fewer words. 
+
+##Design
+The design of the prediction model will use backoff. so when there is no match based on three words. A match will be made based on 2 words. 
+
+For f.e. the 3 words model, the bigram based on the last two words will also be included and given a weight. The predicted word based on both the tri- as the bigram will be used. 
