@@ -32,7 +32,7 @@ library(ggplot2,  lib.loc="C:/TFS/Rlib/")
 ##Loading the data
 ```{r}
 #number of lines we will process
-nl = 1000
+nl = 100
 
 #Twitter
 con <- file("files/final/en_US/en_US.twitter.txt", "r") 
@@ -214,6 +214,7 @@ loop_doc_lang = function(d) {
 ```{r}
 singlegram_twitter = loop_doc(1,nl,df_txt_twitter)
 bigrams_twitter = loop_doc(2,nl,df_txt_twitter)
+tri_grams_twitter = loop_doc(3,nl,df_txt_twitter)
 ```
 
 ###Frequency of ngrams
