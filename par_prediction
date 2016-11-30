@@ -1,0 +1,138 @@
+#install.packages("doParallel",dependencies=TRUE)
+library(doParallel)
+#install.packages("ngram",dependencies=TRUE)
+library(ngram)
+#install.packages("reshape",dependencies=TRUE)
+library(reshape)
+library(foreach)
+#install.packages("doMC",dependencies=TRUE)
+library(doMC)
+
+#download file
+url = "https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip" 
+destfile = "Coursera-SwiftKey.zip"
+download.file(url, destfile)
+
+#unzip
+unzip(destfile)
+
+#load twitter
+nl = 10000
+
+#Twitter
+con <- file("final/en_US/en_US.twitter.txt", "r") 
+txt = readLines(con, n=nl) 
+close(con)
+df_txt_twitter = data.frame(txt, stringsAsFactors = F) 
+
+#function
+splitter<-function(x) {
+  dfr = data.frame(strsplit(x, "\\. |\\? "), stringsAsFactors = F)
+  colnames(dfr) = "zin"
+  zinnen = cbind(words = apply(dfr, 1, wordcount), dfr)
+  return(zinnen)
+}
+
+create_ngram_table = function(n, zinnen) {
+  r = 1
+  #create result data frame
+  df <- data.frame(freq = integer(1000), w1 = character(1000),w2 = character(1000),
+                   w3 = character(1000),w4 = character(1000),w5 = character(1000), stringsAsFactors = FALSE)
+  #use n words sentences only
+  nwords <- data.frame(zinnen[zinnen$words>n-1,2], stringsAsFactors = F)
+  if (length(nwords[,]) > 0 ) {
+    #loop trough sentences
+    for (z in 1:length(nwords[,1])) { #for each sentence
+      #get ngrams for sentence
+      pt = data.frame(get.phrasetable(ngram(nwords[z,], n=n, sep=" ")),stringsAsFactors = F)
+      #split in columns
+      y = data.frame(transform(pt, pt = colsplit(ngrams, split = " ", names = rep('w', n))), stringsAsFactors = F)
+      #convert new columns to character
+      for (a in 1:n) {
+        y[,a+3] = as.character(y[,a+3])  
+      }
+      
+      #add each ngram to result data frame
+      k = n+3
+      l = n+1
+      for (i in 1:length(y[,1])) {
+        df[r,1] <- y[i,2]
+        df[r,2:l] <- y[i,4:k]
+        r <- r + 1
+      }
+      
+    }
+  }
+  return(df)
+}
+
+##Start processing singlegram
+
+# Calculate the number of cores
+no_cores <- detectCores() - 1
+# Initiate cluster
+cl <- makeCluster(no_cores)
+
+clusterExport(cl=cl, varlist=c("splitter", "create_ngram_table"))
+
+intm_result = parLapply(cl, df_txt_twitter[,],
+          function(x) {
+            library(ngram)
+            library(reshape)
+            zinnen = splitter(x)
+            xgram =create_ngram_table(1,zinnen)
+            xgram = xgram[!xgram$w1 == "",]
+            xgram
+      }
+)
+
+#fot testing using one processor is way slower!!
+f_singlebind = function() {
+t = 0
+for (i in 1:length(intm_result)) {
+  t = t + length(intm_result[[i]]$w1)
+  }
+
+result <- data.frame(n = integer(t), w1 = character(t), w2 = character(t),
+                     w3 = character(t), w4 = character(t), w5 = character(t),
+                     stringsAsFactors = FALSE)
+#single core version
+r=1
+for (i in 1:length(intm_result)) {
+  if (length(intm_result[[i]][,1]) > 0 ) {
+    result[r:(r+length(intm_result[[i]][,1])-1),] = intm_result[[i]][,]
+    r = r + length(intm_result[[i]][,1])  
+  }
+}
+result
+}
+result = f_singlebind()
+system.time(f_singlebind())
+
+#the parralel version is way faster!
+registerDoMC(no_cores) 
+f_parbind = function () { 
+  foreach(j=seq(1,10000, by=1000)) %dopar% {
+  t = 0
+  for (i in j:(j+999)) {
+    t = t + length(intm_result[[i]]$w1)
+  }
+  
+  result <- data.frame(n = integer(t), w1 = character(t), w2 = character(t),
+                       w3 = character(t), w4 = character(t), w5 = character(t),
+                       stringsAsFactors = FALSE)
+  #single core version
+  r=1
+  for (i in j:(j+999)) {
+    if (length(intm_result[[i]][,1]) > 0 ) {
+      result[r:(r+length(intm_result[[i]][,1])-1),] = intm_result[[i]][,]
+      r = r + length(intm_result[[i]][,1])  
+    }
+  }
+  result
+  }  
+  }
+
+system.time(f_parbind())
+#bind the final results
+frp =  do.call("rbind", rp)
