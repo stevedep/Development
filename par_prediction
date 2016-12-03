@@ -2,8 +2,9 @@ install.packages("doParallel",dependencies=TRUE)
 install.packages("ngram",dependencies=TRUE)
 install.packages("reshape",dependencies=TRUE)
 install.packages("doMC",dependencies=TRUE)
+install.packages("data.table",dependencies=TRUE)
 
-
+library(data.table)
 library(doParallel)
 library(ngram)
 library(reshape)
@@ -93,6 +94,20 @@ f_create_ngram = function (nl, ds,n, parts) {#number of lines, dataset, # ngram
   do.call("rbind", result)
 }
 
+topnperc =  function(df, p,a) { #data frame, percentage, #ngram
+  dt = data.table(df)
+  dt_a = dt[, sum(n), by=c(names(dt)[2:(a+1)])]
+  n = length(dt_a$V1) / 100 * p
+  y = head(sort(dt_a$V1,decreasing=TRUE), n)
+  topn = dt_a[dt_a$V1 %in% y,]
+  topn = topn[order(-V1),] 
+  
+  x = c(1:length(topn$w1))
+  z = data.frame(cbind(x,topn))
+  z
+}
+
+
 ##Start processing singlegram
 #load twitter
 nl = 100000
@@ -118,5 +133,12 @@ threegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 3, parts = 39)
 fourgram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 4, parts = 39)
 fivegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 5, parts = 39)
 system.time(f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 78))
+
+
+remove(top25p_singlegram)
+top18p_singlegram = topnperc(singlegram_twitter,18,1)
+top18p_twogram = topnperc(twogram_twitter,18,1)
+top18p_threegram = topnperc(threegram_twitter,18,1)
+
 
 stopCluster(cl)
