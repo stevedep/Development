@@ -16,16 +16,7 @@ download.file(url, destfile)
 #unzip
 unzip(destfile)
 
-#load twitter
-nl = 10000
-
-#Twitter
-con <- file("final/en_US/en_US.twitter.txt", "r") 
-txt = readLines(con, n=nl) 
-close(con)
-df_txt_twitter = data.frame(txt, stringsAsFactors = F) 
-
-#function
+#functions
 splitter<-function(x) {
   dfr = data.frame(strsplit(x, "\\. |\\? "), stringsAsFactors = F)
   colnames(dfr) = "zin"
@@ -66,73 +57,59 @@ create_ngram_table = function(n, zinnen) {
   return(df)
 }
 
-##Start processing singlegram
+f_create_ngram = function (nl, ds,n) {#number of lines, dataset, # ngram 
 
+  intm_result = parLapply(cl, ds[,],
+                          function(x) {
+                            library(ngram)
+                            library(reshape)
+                            zinnen = splitter(x)
+                            xgram =create_ngram_table(n,zinnen)
+                            xgram = xgram[!xgram$w1 == "",]
+                            xgram
+                          }
+  )
+  
+  result = foreach(j=seq(1,nl, by=(nl/10))) %dopar% {
+    t = 0
+    for (i in j:(j+(nl/10-1))) {
+      t = t + length(intm_result[[i]]$w1)
+    }
+    
+    result <- data.frame(n = integer(t), w1 = character(t), w2 = character(t),
+                         w3 = character(t), w4 = character(t), w5 = character(t),
+                         stringsAsFactors = FALSE)
+    r=1
+    for (i in j:(j+(nl/10-1))) {
+      if (length(intm_result[[i]][,1]) > 0 ) {
+        result[r:(r+length(intm_result[[i]][,1])-1),] = intm_result[[i]][,]
+        r = r + length(intm_result[[i]][,1])  
+      }
+    }
+    result
+  }  
+  do.call("rbind", result)
+}
+
+##Start processing singlegram
+#load twitter
+nl = 1000000
+
+#Twitter
+con <- file("final/en_US/en_US.twitter.txt", "r") 
+txt = readLines(con, n=nl) 
+close(con)
+df_txt_twitter = data.frame(txt, stringsAsFactors = F) 
+
+#prep parralel processing
 # Calculate the number of cores
 no_cores <- detectCores() - 1
 # Initiate cluster
 cl <- makeCluster(no_cores)
-
+registerDoMC(no_cores) 
 clusterExport(cl=cl, varlist=c("splitter", "create_ngram_table"))
 
-intm_result = parLapply(cl, df_txt_twitter[,],
-          function(x) {
-            library(ngram)
-            library(reshape)
-            zinnen = splitter(x)
-            xgram =create_ngram_table(1,zinnen)
-            xgram = xgram[!xgram$w1 == "",]
-            xgram
-      }
-)
 
-#fot testing using one processor is way slower!!
-f_singlebind = function() {
-t = 0
-for (i in 1:length(intm_result)) {
-  t = t + length(intm_result[[i]]$w1)
-  }
+singlegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 1)
 
-result <- data.frame(n = integer(t), w1 = character(t), w2 = character(t),
-                     w3 = character(t), w4 = character(t), w5 = character(t),
-                     stringsAsFactors = FALSE)
-#single core version
-r=1
-for (i in 1:length(intm_result)) {
-  if (length(intm_result[[i]][,1]) > 0 ) {
-    result[r:(r+length(intm_result[[i]][,1])-1),] = intm_result[[i]][,]
-    r = r + length(intm_result[[i]][,1])  
-  }
-}
-result
-}
-result = f_singlebind()
-system.time(f_singlebind())
-
-#the parralel version is way faster!
-registerDoMC(no_cores) 
-f_parbind = function () { 
-  foreach(j=seq(1,10000, by=1000)) %dopar% {
-  t = 0
-  for (i in j:(j+999)) {
-    t = t + length(intm_result[[i]]$w1)
-  }
-  
-  result <- data.frame(n = integer(t), w1 = character(t), w2 = character(t),
-                       w3 = character(t), w4 = character(t), w5 = character(t),
-                       stringsAsFactors = FALSE)
-  #single core version
-  r=1
-  for (i in j:(j+999)) {
-    if (length(intm_result[[i]][,1]) > 0 ) {
-      result[r:(r+length(intm_result[[i]][,1])-1),] = intm_result[[i]][,]
-      r = r + length(intm_result[[i]][,1])  
-    }
-  }
-  result
-  }  
-  }
-
-system.time(f_parbind())
-#bind the final results
-frp =  do.call("rbind", rp)
+stopCluster(cl)
