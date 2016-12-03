@@ -141,10 +141,23 @@ system.time(f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 78))
 
 remove(top25p_singlegram)
 top50p_singlegram = topnperc(singlegram_twitter,50,1)
-top50p_twogram = topnperc(twogram_twitter,18,2)
-top50p_threegram = topnperc(threegram_twitter,4,3)
+top50p_twogram = topnperc(twogram_twitter,50,2)
+top50p_threegram = topnperc(threegram_twitter,50,3)
 
+st = sum(singlegram_twitter$n, na.rm = T) 
+top50p_singlegram = cbind(top50p_singlegram, prob = top50p_singlegram$V1 / st)
 
+tt = sum(twogram_twitter$n, na.rm = T) 
+top50p_twogram = cbind(top50p_twogram, prob = top50p_twogram$V1 / st)
+
+trt = sum(threegram_twitter$n, na.rm = T) 
+top50p_threegram = cbind(top50p_threegram, prob = top50p_threegram$V1 / st)
+
+setkey(top50p_threegram,w2,w3)
+setkey(top50p_twogram,w1,w2)
+
+top50p_threegram = top50p_threegram[top50p_twogram, nomatch=0]
+head(top50p_threegram)
 
 
 stopCluster(cl)
