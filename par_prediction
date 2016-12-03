@@ -94,17 +94,21 @@ f_create_ngram = function (nl, ds,n, parts) {#number of lines, dataset, # ngram
   do.call("rbind", result)
 }
 
+#top percentage by frequency
 topnperc =  function(df, p,a) { #data frame, percentage, #ngram
   dt = data.table(df)
   dt_a = dt[, sum(n), by=c(names(dt)[2:(a+1)])]
-  n = length(dt_a$V1) / 100 * p
-  y = head(sort(dt_a$V1,decreasing=TRUE), n)
-  topn = dt_a[dt_a$V1 %in% y,]
-  topn = topn[order(-V1),] 
-  
-  x = c(1:length(topn$w1))
-  z = data.frame(cbind(x,topn))
-  z
+  dt_as =  dt_a[order(-V1),] 
+  q1n = cbind(nr = c(1:length(dt_as$w1)), dt_as)
+  q1nv = q1n$V1
+  clusterExport(cl=cl, varlist=c("splitter", "create_ngram_table", "q1nv"))
+  rt = parSapply(cl,1:length(q1nv), function(x) sum(q1nv[1:x]))
+  q1n = cbind(q1n, rt)                        
+  t = sum(q1n$V1, na.rm=TRUE)
+  prc = rt / t * 100
+  lprc = (prc < p)
+  l = table(lprc)["TRUE"]
+  q1n[1:l,]
 }
 
 
@@ -136,9 +140,11 @@ system.time(f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 78))
 
 
 remove(top25p_singlegram)
-top18p_singlegram = topnperc(singlegram_twitter,18,1)
-top18p_twogram = topnperc(twogram_twitter,18,1)
-top18p_threegram = topnperc(threegram_twitter,18,1)
+top50p_singlegram = topnperc(singlegram_twitter,50,1)
+top50p_twogram = topnperc(twogram_twitter,18,2)
+top50p_threegram = topnperc(threegram_twitter,4,3)
+
+
 
 
 stopCluster(cl)
