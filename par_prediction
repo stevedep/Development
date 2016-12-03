@@ -1,15 +1,17 @@
-#install.packages("doParallel",dependencies=TRUE)
+install.packages("doParallel",dependencies=TRUE)
+install.packages("ngram",dependencies=TRUE)
+install.packages("reshape",dependencies=TRUE)
+install.packages("doMC",dependencies=TRUE)
+
+
 library(doParallel)
-#install.packages("ngram",dependencies=TRUE)
 library(ngram)
-#install.packages("reshape",dependencies=TRUE)
 library(reshape)
 library(foreach)
-#install.packages("doMC",dependencies=TRUE)
 library(doMC)
 
 #download file
-url = "https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip" 
+url = "http://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip" 
 destfile = "Coursera-SwiftKey.zip"
 download.file(url, destfile)
 
@@ -57,8 +59,8 @@ create_ngram_table = function(n, zinnen) {
   return(df)
 }
 
-f_create_ngram = function (nl, ds,n) {#number of lines, dataset, # ngram 
-
+f_create_ngram = function (nl, ds,n, parts) {#number of lines, dataset, # ngram 
+  
   intm_result = parLapply(cl, ds[,],
                           function(x) {
                             library(ngram)
@@ -70,9 +72,9 @@ f_create_ngram = function (nl, ds,n) {#number of lines, dataset, # ngram
                           }
   )
   
-  result = foreach(j=seq(1,nl, by=(nl/10))) %dopar% {
+  result = foreach(j=seq(1,nl, by=(nl/parts))) %dopar% {
     t = 0
-    for (i in j:(j+(nl/10-1))) {
+    for (i in j:(j+(nl/parts-1))) {
       t = t + length(intm_result[[i]]$w1)
     }
     
@@ -80,7 +82,7 @@ f_create_ngram = function (nl, ds,n) {#number of lines, dataset, # ngram
                          w3 = character(t), w4 = character(t), w5 = character(t),
                          stringsAsFactors = FALSE)
     r=1
-    for (i in j:(j+(nl/10-1))) {
+    for (i in j:(j+(nl/parts-1))) {
       if (length(intm_result[[i]][,1]) > 0 ) {
         result[r:(r+length(intm_result[[i]][,1])-1),] = intm_result[[i]][,]
         r = r + length(intm_result[[i]][,1])  
@@ -93,7 +95,7 @@ f_create_ngram = function (nl, ds,n) {#number of lines, dataset, # ngram
 
 ##Start processing singlegram
 #load twitter
-nl = 1000000
+nl = 100000
 
 #Twitter
 con <- file("final/en_US/en_US.twitter.txt", "r") 
@@ -110,6 +112,11 @@ registerDoMC(no_cores)
 clusterExport(cl=cl, varlist=c("splitter", "create_ngram_table"))
 
 
-singlegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 1)
+singlegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 39)
+twogram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 2, parts = 39)
+threegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 3, parts = 39)
+fourgram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 4, parts = 39)
+fivegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 5, parts = 39)
+system.time(f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 78))
 
 stopCluster(cl)
