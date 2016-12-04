@@ -174,12 +174,12 @@ colnames(top50p_threegram_new_labels) = c("nr", "w1", "w2", "w3", "V1", "rt", "p
 
 
 setkey(top50p_fourgram,w2,w3,w4)
-setkey(top50p_threegram,w1,w2,w3)
+setkey(top50p_threegram_new_labels,w1,w2,w3)
 
-top50p_fourgram_new = top50p_threegram[top50p_fourgram] #alles met i. aangevuld met V1, prob en het 2e en 3e woord
+top50p_fourgram_new = top50p_threegram_new_labels[top50p_fourgram] #alles met i. aangevuld met V1, prob en het 2e en 3e woord
 head(top50p_fourgram_new)
-top50p_fourgram_new_labels = top50p_fourgram_new[,c(1,9,2:4,10:12,5,7)]
-colnames(top50p_fourgram_new_labels) = c("i.nr", "i.w1", "w1", "w2", "w4", "V1", "rt", "prob", "V13", "prob3")
+top50p_fourgram_new_labels = top50p_fourgram_new[,c("i.nr","i.w1","w1", "w2", "w3", "i.V1", "i.rt", "i.prob", "V1", "prob", "V12", "prob2", "V11", "prob1")]
+colnames(top50p_fourgram_new_labels) = c("nr", "w1", "w2", "w3", "w4", "V1", "rt", "prob", "V13", "prob3", "V12", "prob2", "V11", "prob1")
 head(top50p_fourgram_new_labels[order(-V1),])
 
 
