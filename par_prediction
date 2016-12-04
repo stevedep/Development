@@ -139,8 +139,6 @@ fourgram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 4, parts = 63)
 fivegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 5, parts = 63)
 system.time(f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 63))
 
-
-remove(top25p_singlegram)
 top50p_singlegram = topnperc(singlegram_twitter,70,1)
 top50p_twogram = topnperc(twogram_twitter,30,2)
 top50p_threegram = topnperc(threegram_twitter,20,3)
@@ -155,11 +153,16 @@ top50p_twogram = cbind(top50p_twogram, prob = top50p_twogram$V1 / st)
 trt = sum(threegram_twitter$n, na.rm = T) 
 top50p_threegram = cbind(top50p_threegram, prob = top50p_threegram$V1 / st)
 
-setkey(top50p_threegram,w2,w3)
-setkey(top50p_twogram,w1,w2)
+frt = sum(fourgram_twitter$n, na.rm = T) 
+top50p_fourgram = cbind(top50p_fourgram, prob = top50p_fourgram$V1 / st)
 
-top50p_threegram = top50p_threegram[top50p_twogram, nomatch=0]
-head(top50p_threegram)
+
+
+setkey(top50p_fourgram,w2,w3,w4)
+setkey(top50p_threegram,w1,w2,w3)
+
+top50p_fourgram_new = top50p_threegram[top50p_fourgram]
+head(top50p_fourgram_new[1:10,c(1,9,2:4,10:12,5,7)])
 
 
 stopCluster(cl)
