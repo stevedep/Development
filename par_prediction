@@ -156,13 +156,28 @@ top50p_threegram = cbind(top50p_threegram, prob = top50p_threegram$V1 / st)
 frt = sum(fourgram_twitter$n, na.rm = T) 
 top50p_fourgram = cbind(top50p_fourgram, prob = top50p_fourgram$V1 / st)
 
+setkey(top50p_twogram,w2)
+setkey(top50p_singlegram,w1)
+
+top50p_twogram_new = top50p_singlegram[top50p_twogram]
+head(top50p_twogram_new)
+top50p_twogram_new_labels = top50p_twogram_new[,c("i.nr","i.w1","w1","i.V1", "i.rt", "i.prob", "V1", "prob")]
+head(top50p_twogram_new_labels)
+colnames(top50p_twogram_new_labels) = c("nr", "w1", "w2", "V1", "rt", "prob", "V12", "prob2")
+head(top50p_twogram_new_labels[order(-V1),])
+head(top50p_twogram[order(-V1),])
+
+head(top50p_twogram_new)
 
 
 setkey(top50p_fourgram,w2,w3,w4)
 setkey(top50p_threegram,w1,w2,w3)
 
 top50p_fourgram_new = top50p_threegram[top50p_fourgram]
-head(top50p_fourgram_new[1:10,c(1,9,2:4,10:12,5,7)])
+head(top50p_fourgram_new)
+top50p_fourgram_new_labels = top50p_fourgram_new[,c(1,9,2:4,10:12,5,7)]
+colnames(top50p_fourgram_new_labels) = c("nr", "w1", "w2", "w3", "w4", "V1", "rt", "prob", "V13", "prob3")
+head(top50p_fourgram_new_labels[order(-V1),])
 
 
 stopCluster(cl)
