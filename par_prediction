@@ -101,8 +101,9 @@ topnperc =  function(df, p,a) { #data frame, percentage, #ngram
   dt_as =  dt_a[order(-V1),] 
   q1n = cbind(nr = c(1:length(dt_as$w1)), dt_as)
   q1nv = q1n$V1
-  clusterExport(cl=cl, varlist=c("splitter", "create_ngram_table", "q1nv"))
-  rt = parSapply(cl,1:length(q1nv), function(x) sum(q1nv[1:x]))
+  #clusterExport(cl=cl, varlist=c("q1nv"), envir=environment())
+  #rt = parSapply(cl,1:length(q1nv), function(x) sum(q1nv[1:x]))
+  rt = cumsum(q1nv)
   q1n = cbind(q1n, rt)                        
   t = sum(q1n$V1, na.rm=TRUE)
   prc = rt / t * 100
@@ -131,18 +132,19 @@ registerDoMC(no_cores)
 clusterExport(cl=cl, varlist=c("splitter", "create_ngram_table"))
 
 
-singlegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 39)
-twogram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 2, parts = 39)
-threegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 3, parts = 39)
-fourgram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 4, parts = 39)
-fivegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 5, parts = 39)
-system.time(f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 78))
+singlegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 63)
+twogram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 2, parts = 63)
+threegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 3, parts = 63)
+fourgram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 4, parts = 63)
+fivegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 5, parts = 63)
+system.time(f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 63))
 
 
 remove(top25p_singlegram)
-top50p_singlegram = topnperc(singlegram_twitter,50,1)
-top50p_twogram = topnperc(twogram_twitter,50,2)
-top50p_threegram = topnperc(threegram_twitter,50,3)
+top50p_singlegram = topnperc(singlegram_twitter,70,1)
+top50p_twogram = topnperc(twogram_twitter,30,2)
+top50p_threegram = topnperc(threegram_twitter,20,3)
+top50p_fourgram = topnperc(fourgram_twitter,20,4)
 
 st = sum(singlegram_twitter$n, na.rm = T) 
 top50p_singlegram = cbind(top50p_singlegram, prob = top50p_singlegram$V1 / st)
