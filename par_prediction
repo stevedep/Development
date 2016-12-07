@@ -137,7 +137,7 @@ twogram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 2, parts = 63)
 threegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 3, parts = 63)
 fourgram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 4, parts = 63)
 fivegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 5, parts = 63)
-system.time(f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 63))
+#system.time(f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 63))
 
 top50p_singlegram = topnperc(singlegram_twitter,70,1)
 top50p_twogram = topnperc(twogram_twitter,30,2)
@@ -180,7 +180,10 @@ top50p_fourgram_new = top50p_threegram_new_labels[top50p_fourgram] #alles met i.
 head(top50p_fourgram_new)
 top50p_fourgram_new_labels = top50p_fourgram_new[,c("i.nr","i.w1","w1", "w2", "w3", "i.V1", "i.rt", "i.prob", "V1", "prob", "V12", "prob2", "V11", "prob1")]
 colnames(top50p_fourgram_new_labels) = c("nr", "w1", "w2", "w3", "w4", "V1", "rt", "prob", "V13", "prob3", "V12", "prob2", "V11", "prob1")
-head(top50p_fourgram_new_labels[order(-V1),])
 
+w4 = c(0.6,0.3,0.05,0.05)
+tt = w4 * top50p_fourgram_new_labels[,c("prob", "prob3", "prob2", "prob1")]
+t = tt[, new := prob + prob3 + prob2 + prob1 ]
+top50p_fourgram_new_labels = cbind(top50p_fourgram_new_labels,tprob = t$new)
 
-stopCluster(cl)
+#stopCluster(cl)
