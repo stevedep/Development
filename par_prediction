@@ -28,16 +28,6 @@ splitter<-function(x) {
   return(zinnen)
 }
 
-splitwords<-function(x) {
-  dfr = data.frame(strsplit(x, " "), stringsAsFactors = F)
-  colnames(dfr) = "word"
-  dfr$word = tolower(dfr$word)
-  return(dfr$word)
-}
-
-s = "thanks for the"
-splitwords(s)
-
 
 create_ngram_table = function(n, zinnen) {
   r = 1
@@ -189,19 +179,64 @@ setkey(top50p_fourgram,w2,w3,w4)
 setkey(top50p_threegram_new_labels,w1,w2,w3)
 
 top50p_fourgram_new = top50p_threegram_new_labels[top50p_fourgram] #alles met i. aangevuld met V1, prob en het 2e en 3e woord
-head(top50p_fourgram_new)
 top50p_fourgram_new_labels = top50p_fourgram_new[,c("i.nr","i.w1","w1", "w2", "w3", "i.V1", "i.rt", "i.prob", "V1", "prob", "V12", "prob2", "V11", "prob1")]
 colnames(top50p_fourgram_new_labels) = c("nr", "w1", "w2", "w3", "w4", "V1", "rt", "prob", "V13", "prob3", "V12", "prob2", "V11", "prob1")
-
+remove(top50p_fourgram_new_labels)
 w4 = c(0.6,0.3,0.05,0.05)
 tt = w4 * top50p_fourgram_new_labels[,c("prob", "prob3", "prob2", "prob1")]
+tt[, ][is.na(tt[, ])] <- 0
 t = tt[, new := prob + prob3 + prob2 + prob1 ]
 top50p_fourgram_new_labels = cbind(top50p_fourgram_new_labels,tprob = t$new)
+
 t = head(top50p_fourgram_new_labels[order(-V1),],5)
 
 tolower(t$w1)
 #stopCluster(cl)
 
 
-head(top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1=="thanks" &
-                                  top50p_fourgram_new_labels$w2=="for",],3)
+nword4 = function(words) {
+  temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
+                                      top50p_fivegram_new_labels$w2==words[2]
+                                    & top50p_fivegram_new_labels$w3==words[3]
+                                    & top50p_fivegram_new_labels$w3==words[4]
+                                    ,]
+  head(temp[order(-tprob), c("w5", "tprob")],3)
+}
+
+nword3 = function(words) {
+  temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[1] &
+                                      top50p_fourgram_new_labels$w2==words[2]
+                                    & top50p_fourgram_new_labels$w3==words[3]
+                                    ,]
+  head(temp[order(-tprob), c("w4", "tprob")],3)
+}
+
+nword2 = function(words) {
+  temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[1] &
+                                       top50p_threegram_new_labels$w2==words[2]
+                                    ,]
+  head(temp[order(-tprob), c("w3", "tprob")],3)
+}
+
+
+next_word = function(s) {
+  wc = wordcount(s)
+  words = splitwords(s)
+  if (wc == 3) {
+    }
+}
+
+s = "my dog is"
+s= "hello my what thanks for the"
+
+
+splitwords<-function(x) {
+  dfr = data.frame(strsplit(x, " "), stringsAsFactors = F)
+  colnames(dfr) = "word"
+  dfr$word = tolower(dfr$word)
+  l = length(dfr$word)
+  b = if(l-3 < 1) {1} else {l-3}
+  return(dfr$word[b:l])
+}
+splitwords(s)
+next_word(s)
