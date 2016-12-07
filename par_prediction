@@ -220,14 +220,13 @@ nword2 = function(words) {
 
 
 next_word = function(s) {
-  wc = wordcount(s)
   words = splitwords(s)
-  if (wc == 3) {
+  wc = length(words[])
+  if (wc == 4) {
+      result = nword4(words)
+      if (length(result[,1] > 0 )) {print("resultaten")} else {print("geen resultaten")}
     }
 }
-
-s = "my dog is"
-s= "hello my what thanks for the"
 
 
 splitwords<-function(x) {
@@ -238,5 +237,8 @@ splitwords<-function(x) {
   b = if(l-3 < 1) {1} else {l-3}
   return(dfr$word[b:l])
 }
+
 splitwords(s)
+s = "my dog is"
+s= "hello my what thanks for the"
 next_word(s)
