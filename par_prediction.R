@@ -274,19 +274,19 @@ nword4 = function(words) {
 }
 
 nword3 = function(words) {
-  temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[2] &
-                                      top50p_fourgram_new_labels$w2==words[3]
-                                    & top50p_fourgram_new_labels$w3==words[4],]
+  temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[1] &
+                                      top50p_fourgram_new_labels$w2==words[2]
+                                    & top50p_fourgram_new_labels$w3==words[3],]
   if (length(temp$nr) > 1) 
   {  head(temp[order(-tprob), c("w4", "tprob")],3) }
   else {
-    temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[3] &
-                                         top50p_threegram_new_labels$w2==words[4]
+    temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[2] &
+                                         top50p_threegram_new_labels$w2==words[3]
                                        ,]
     if (length(temp$nr) > 1) 
     {  head(temp[order(-tprob), c("w3", "tprob")],3) }
     else {
-      temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[4] 
+      temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[3] 
                                        ,]
       if (length(temp$nr) > 1) 
       {  head(temp[order(-tprob), c("w2", "tprob")],3) }
@@ -298,13 +298,13 @@ nword3 = function(words) {
 
 
 nword2 = function(words) {
-  temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[3] &
-                                       top50p_threegram_new_labels$w2==words[4]
+  temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[1] &
+                                       top50p_threegram_new_labels$w2==words[2]
                                      ,]
   if (length(temp$nr) > 1) 
   {  head(temp[order(-tprob), c("w3", "tprob")],3) }
   else {
-    temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[4] 
+    temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[2] 
                                      ,]
     if (length(temp$nr) > 1) 
     {  head(temp[order(-tprob), c("w2", "tprob")],3) }
@@ -321,7 +321,9 @@ next_word = function(s) {
   
   if (wc == 4) {
       nword4(words)
-    }
+  }
+  else if (wc == 3) {nword3(words)}
+  else if (wc == 2) {nword2(words)}
 }
 
 splitwords<-function(x) {
@@ -336,5 +338,5 @@ splitwords<-function(x) {
 splitwords(s)
 s = "hi mi for the"
 s= "hello my what thanks for the"
-s= "thank you so much"
+s= "for the"
 next_word(s)
