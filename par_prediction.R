@@ -198,14 +198,46 @@ top50p_fivegram_new = top50p_fourgram_new_labels[top50p_fivegram] #alles met i. 
 #het 2e en 3e woord
 top50p_fivegram_new_labels = top50p_fivegram_new[,c("i.nr","i.w1","w1", "w2", "w3", "w4", "i.V1", "i.rt", "i.prob", "V1", "prob", "V13", "prob3","V12", "prob2", "V11", "prob1")]
 colnames(top50p_fivegram_new_labels) = c("nr", "w1", "w2", "w3", "w4", "w5", "V1", "rt", "prob","V14", "prob4", "V13", "prob3", "V12", "prob2", "V11", "prob1")
+top50p_fivegram_new_labels[, ][is.na(top50p_fivegram_new_labels[, ])] <- 0
 
 
 #total prob uitrekennen
-w4 = c(1,0,0,0)
+w2 = c(0.9,0.1)
+tt = mapply("*",top50p_twogram_new_labels[,c("prob", "prob1")],w2)
+tt = data.frame(tt)
+tt$new = tt$prob + tt$prob1
+top50p_twogram_new_labels = cbind(top50p_twogram_new_labels,tprob = tt$new)
+
+head(top50p_twogram_new_labels[order(-prob),])
+head(top50p_twogram_new_labels[order(-tprob),])
+
+w3 = c(0.9,0.05, 0.05)
+tt = mapply("*",top50p_threegram_new_labels[,c("prob","prob2", "prob1")],w3)
+tt = data.frame(tt)
+tt$new = tt$prob + tt$prob2 + tt$prob1
+top50p_threegram_new_labels = cbind(top50p_threegram_new_labels,tprob = tt$new)
+
+head(top50p_threegram_new_labels[order(-prob),])
+head(top50p_threegram_new_labels[order(-tprob),])
+
+w4 = c(0.8,0.1,0.005,0.005)
 tt = mapply("*",top50p_fourgram_new_labels[,c("prob", "prob3", "prob2", "prob1")],w4)
 tt = data.frame(tt)
 tt$new = tt$prob + tt$prob3 + tt$prob2 + tt$prob1
 top50p_fourgram_new_labels = cbind(top50p_fourgram_new_labels,tprob = tt$new)
+
+head(top50p_fourgram_new_labels[order(-prob),])
+head(top50p_fourgram_new_labels[order(-tprob),])
+
+w5 = c(0.7,0.1, 0.1,0.005,0.005)
+tt = mapply("*",top50p_fivegram_new_labels[,c("prob", "prob4", "prob3", "prob2", "prob1")],w5)
+tt = data.frame(tt)
+tt$new = tt$prob + tt$prob4  +tt$prob3 + tt$prob2 + tt$prob1
+top50p_fivegram_new_labels = cbind(top50p_fivegram_new_labels,tprob = tt$new)
+
+head(top50p_fivegram_new_labels[order(-prob),])
+head(top50p_fivegram_new_labels[order(-tprob),])
+
 
 #stopCluster(cl)
 
@@ -214,34 +246,81 @@ nword4 = function(words) {
   temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
                                       top50p_fivegram_new_labels$w2==words[2]
                                     & top50p_fivegram_new_labels$w3==words[3]
-                                    & top50p_fivegram_new_labels$w3==words[4]
+                                    & top50p_fivegram_new_labels$w4==words[4]
                                     ,]
-  head(temp[order(-tprob), c("w5", "tprob")],3)
+  if (length(temp$nr) > 1) 
+  {  head(temp[order(-tprob), c("w5", "tprob")],3) }
+  else {
+    temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[2] &
+                                        top50p_fourgram_new_labels$w2==words[3]
+                                      & top50p_fourgram_new_labels$w3==words[4],]
+    if (length(temp$nr) > 1) 
+    {  head(temp[order(-tprob), c("w4", "tprob")],3) }
+    else {
+      temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[3] &
+                                           top50p_threegram_new_labels$w2==words[4]
+                                         ,]
+      if (length(temp$nr) > 1) 
+      {  head(temp[order(-tprob), c("w3", "tprob")],3) }
+      else {
+        temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[4] 
+                                         ,]
+        if (length(temp$nr) > 1) 
+        {  head(temp[order(-tprob), c("w2", "tprob")],3) }
+        else {data.frame(c("the"))}
+      }      
+    }
+  }
 }
 
 nword3 = function(words) {
-  temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[1] &
-                                      top50p_fourgram_new_labels$w2==words[2]
-                                    & top50p_fourgram_new_labels$w3==words[3]
-                                    ,]
-  head(temp[order(-tprob), c("w4", "tprob")],3)
+  temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[2] &
+                                      top50p_fourgram_new_labels$w2==words[3]
+                                    & top50p_fourgram_new_labels$w3==words[4],]
+  if (length(temp$nr) > 1) 
+  {  head(temp[order(-tprob), c("w4", "tprob")],3) }
+  else {
+    temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[3] &
+                                         top50p_threegram_new_labels$w2==words[4]
+                                       ,]
+    if (length(temp$nr) > 1) 
+    {  head(temp[order(-tprob), c("w3", "tprob")],3) }
+    else {
+      temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[4] 
+                                       ,]
+      if (length(temp$nr) > 1) 
+      {  head(temp[order(-tprob), c("w2", "tprob")],3) }
+      else {data.frame(c("the"))}
+    }      
+  }
 }
 
+
+
 nword2 = function(words) {
-  temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[1] &
-                                       top50p_threegram_new_labels$w2==words[2]
-                                    ,]
-  head(temp[order(-tprob), c("w3", "tprob")],3)
+  temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[3] &
+                                       top50p_threegram_new_labels$w2==words[4]
+                                     ,]
+  if (length(temp$nr) > 1) 
+  {  head(temp[order(-tprob), c("w3", "tprob")],3) }
+  else {
+    temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[4] 
+                                     ,]
+    if (length(temp$nr) > 1) 
+    {  head(temp[order(-tprob), c("w2", "tprob")],3) }
+    else {data.frame(c("the"))}
+  }      
 }
+
+
 
 next_word = function(s) {
   words = splitwords(s)
   wc = length(words[])
-  if (wc > 3) {wc = 3}
+  if (wc > 4) {wc = 4}
   
-  if (wc == 3) {
-      result = nword3(words)
-      if (length(result[,1] > 0 )) {print("resultaten")} else {print("geen resultaten")}
+  if (wc == 4) {
+      nword4(words)
     }
 }
 
@@ -255,7 +334,7 @@ splitwords<-function(x) {
 }
 
 splitwords(s)
-s = "my dog is"
+s = "hi mi for the"
 s= "hello my what thanks for the"
-
+s= "thank you so much"
 next_word(s)
