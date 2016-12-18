@@ -189,6 +189,7 @@ setkey(top50p_threegram_new_labels,w1,w2,w3)
 top50p_fourgram_new = top50p_threegram_new_labels[top50p_fourgram] #alles met i. aangevuld met V1, prob en het 2e en 3e woord
 top50p_fourgram_new_labels = top50p_fourgram_new[,c("i.nr","i.w1","w1", "w2", "w3", "i.V1", "i.rt", "i.prob", "V1", "prob", "V12", "prob2", "V11", "prob1")]
 colnames(top50p_fourgram_new_labels) = c("nr", "w1", "w2", "w3", "w4", "V1", "rt", "prob", "V13", "prob3", "V12", "prob2", "V11", "prob1")
+top50p_fourgram_new_labels[, ][is.na(top50p_fourgram_new_labels[, ])] <- 0
 
 setkey(top50p_fivegram,w2, w3,w4,w5)
 setkey(top50p_fourgram_new_labels,w1,w2,w3,w4)
@@ -198,18 +199,13 @@ top50p_fivegram_new = top50p_fourgram_new_labels[top50p_fivegram] #alles met i. 
 top50p_fivegram_new_labels = top50p_fivegram_new[,c("i.nr","i.w1","w1", "w2", "w3", "w4", "i.V1", "i.rt", "i.prob", "V1", "prob", "V13", "prob3","V12", "prob2", "V11", "prob1")]
 colnames(top50p_fivegram_new_labels) = c("nr", "w1", "w2", "w3", "w4", "w5", "V1", "rt", "prob","V14", "prob4", "V13", "prob3", "V12", "prob2", "V11", "prob1")
 
-head(top50p_fivegram_new_labels)
-
-
 
 #total prob uitrekennen
-head(top50p_fourgram_new_labels[order(-prob),])
-w4 = c(0.6,0.3,0.05,0.05)
-tt = w4 * top50p_fourgram_new_labels[,c("prob", "prob3", "prob2", "prob1")]
-tt[, ][is.na(tt[, ])] <- 0
-t = tt[, new := prob + prob3 + prob2 + prob1 ]
-top50p_fourgram_new_labels = cbind(top50p_fourgram_new_labels,tprob = t$new)
-
+w4 = c(1,0,0,0)
+tt = mapply("*",top50p_fourgram_new_labels[,c("prob", "prob3", "prob2", "prob1")],w4)
+tt = data.frame(tt)
+tt$new = tt$prob + tt$prob3 + tt$prob2 + tt$prob1
+top50p_fourgram_new_labels = cbind(top50p_fourgram_new_labels,tprob = tt$new)
 
 #stopCluster(cl)
 
