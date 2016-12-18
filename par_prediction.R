@@ -147,7 +147,9 @@ top50p_singlegram = topnperc(singlegram_twitter,70,1)
 top50p_twogram = topnperc(twogram_twitter,30,2)
 top50p_threegram = topnperc(threegram_twitter,20,3)
 top50p_fourgram = topnperc(fourgram_twitter,20,4)
+top50p_fivegram = topnperc(fivegram_twitter,20,5)
 
+#add probabilities
 st = sum(singlegram_twitter$n, na.rm = T) 
 top50p_singlegram = cbind(top50p_singlegram, prob = top50p_singlegram$V1 / st)
 
@@ -159,6 +161,10 @@ top50p_threegram = cbind(top50p_threegram, prob = top50p_threegram$V1 / st)
 
 frt = sum(fourgram_twitter$n, na.rm = T) 
 top50p_fourgram = cbind(top50p_fourgram, prob = top50p_fourgram$V1 / st)
+
+frt = sum(fivegram_twitter$n, na.rm = T) 
+top50p_fivegram = cbind(top50p_fivegram, prob = top50p_fivegram$V1 / st)
+
 
 setkey(top50p_twogram,w2)
 setkey(top50p_singlegram,w1)
@@ -183,19 +189,31 @@ setkey(top50p_threegram_new_labels,w1,w2,w3)
 top50p_fourgram_new = top50p_threegram_new_labels[top50p_fourgram] #alles met i. aangevuld met V1, prob en het 2e en 3e woord
 top50p_fourgram_new_labels = top50p_fourgram_new[,c("i.nr","i.w1","w1", "w2", "w3", "i.V1", "i.rt", "i.prob", "V1", "prob", "V12", "prob2", "V11", "prob1")]
 colnames(top50p_fourgram_new_labels) = c("nr", "w1", "w2", "w3", "w4", "V1", "rt", "prob", "V13", "prob3", "V12", "prob2", "V11", "prob1")
-remove(top50p_fourgram_new_labels)
+
+setkey(top50p_fivegram,w2, w3,w4,w5)
+setkey(top50p_fourgram_new_labels,w1,w2,w3,w4)
+
+top50p_fivegram_new = top50p_fourgram_new_labels[top50p_fivegram] #alles met i. aangevuld met V1, prob en 
+#het 2e en 3e woord
+top50p_fivegram_new_labels = top50p_fivegram_new[,c("i.nr","i.w1","w1", "w2", "w3", "w4", "i.V1", "i.rt", "i.prob", "V1", "prob", "V13", "prob3","V12", "prob2", "V11", "prob1")]
+colnames(top50p_fivegram_new_labels) = c("nr", "w1", "w2", "w3", "w4", "w5", "V1", "rt", "prob","V14", "prob4", "V13", "prob3", "V12", "prob2", "V11", "prob1")
+
+head(top50p_fivegram_new_labels)
+
+
+
+#total prob uitrekennen
+head(top50p_fourgram_new_labels[order(-prob),])
 w4 = c(0.6,0.3,0.05,0.05)
 tt = w4 * top50p_fourgram_new_labels[,c("prob", "prob3", "prob2", "prob1")]
 tt[, ][is.na(tt[, ])] <- 0
 t = tt[, new := prob + prob3 + prob2 + prob1 ]
 top50p_fourgram_new_labels = cbind(top50p_fourgram_new_labels,tprob = t$new)
 
-t = head(top50p_fourgram_new_labels[order(-V1),],5)
 
-tolower(t$w1)
 #stopCluster(cl)
 
-
+#five labels hebben we nog niet gemaakt. 
 nword4 = function(words) {
   temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
                                       top50p_fivegram_new_labels$w2==words[2]
@@ -220,16 +238,16 @@ nword2 = function(words) {
   head(temp[order(-tprob), c("w3", "tprob")],3)
 }
 
-
 next_word = function(s) {
   words = splitwords(s)
   wc = length(words[])
-  if (wc == 4) {
-      result = nword4(words)
+  if (wc > 3) {wc = 3}
+  
+  if (wc == 3) {
+      result = nword3(words)
       if (length(result[,1] > 0 )) {print("resultaten")} else {print("geen resultaten")}
     }
 }
-
 
 splitwords<-function(x) {
   dfr = data.frame(strsplit(x, " "), stringsAsFactors = F)
@@ -243,4 +261,5 @@ splitwords<-function(x) {
 splitwords(s)
 s = "my dog is"
 s= "hello my what thanks for the"
+
 next_word(s)
