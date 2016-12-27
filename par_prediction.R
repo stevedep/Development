@@ -272,7 +272,6 @@ top50p_fivegram_new_labels = cbind(top50p_fivegram_new_labels,tprob = tt$new)
 head(top50p_fivegram_new_labels[order(-prob),])
 head(top50p_fivegram_new_labels[order(-tprob),])
 
-
 #stopCluster(cl)
 
 #five labels hebben we nog niet gemaakt. 
@@ -329,8 +328,6 @@ nword3 = function(words) {
   }
 }
 
-
-
 nword2 = function(words) {
   temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[1] &
                                        top50p_threegram_new_labels$w2==words[2]
@@ -345,8 +342,6 @@ nword2 = function(words) {
     else {data.frame(c("the"))}
   }      
 }
-
-
 
 next_word = function(s) {
   words = splitwords(s)
@@ -379,8 +374,6 @@ splitwords(s)
 s = "hi mi for the"
 s= "hello my what thanks for the"
 s= "for the"
-<<<<<<< HEAD
+
 next_word(s)
-=======
-next_word(s)
->>>>>>> 8f8c5b0095e7e9594800710af490dddfab360f15
+
