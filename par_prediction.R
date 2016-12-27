@@ -177,11 +177,11 @@ fivegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 5, parts = 63)
 
 top50p_singlegram = topnperc(singlegram_twitter,70,1)
 top50p_twogram = topnperc(twogram_twitter,30,2)
-top50p_threegram = topnperc(threegram_twitter,20,3)
-top50p_fourgram = topnperc(fourgram_twitter,20,4)
-top50p_fivegram = topnperc(fivegram_twitter,20,5)
+top50p_threegram = topnperc(threegram_twitter,30,3)
+top50p_fourgram = topnperc(fourgram_twitter,30,4)
+top50p_fivegram = topnperc(fivegram_twitter,30,5)
 
-head(top50p_threegram)
+#head(top50p_threegram)
 
 #add probabilities
 st = sum(singlegram_twitter$n, na.rm = T) 
@@ -199,7 +199,6 @@ top50p_fourgram = cbind(top50p_fourgram, prob = top50p_fourgram$V1 / st)
 frt = sum(fivegram_twitter$n, na.rm = T) 
 top50p_fivegram = cbind(top50p_fivegram, prob = top50p_fivegram$V1 / st)
 
-
 setkey(top50p_twogram,w2)
 setkey(top50p_singlegram,w1)
 
@@ -213,9 +212,8 @@ setkey(top50p_twogram_new_labels,w1,w2)
 top50p_threegram_new = top50p_twogram_new_labels[top50p_threegram]
 head(top50p_threegram_new)
 top50p_threegram_new_labels = top50p_threegram_new[,c("i.nr","i.w1","w1", "w2","i.V1", "i.rt", "i.prob", "V1", "prob", "V11", "prob1")]
-head(top50p_threegram_new_labels)
+#head(top50p_threegram_new_labels)
 colnames(top50p_threegram_new_labels) = c("nr", "w1", "w2", "w3", "V1", "rt", "prob", "V12", "prob2", "V11","prob1")
-
 
 setkey(top50p_fourgram,w2,w3,w4)
 setkey(top50p_threegram_new_labels,w1,w2,w3)
@@ -234,7 +232,6 @@ top50p_fivegram_new_labels = top50p_fivegram_new[,c("i.nr","i.w1","w1", "w2", "w
 colnames(top50p_fivegram_new_labels) = c("nr", "w1", "w2", "w3", "w4", "w5", "V1", "rt", "prob","V14", "prob4", "V13", "prob3", "V12", "prob2", "V11", "prob1")
 top50p_fivegram_new_labels[, ][is.na(top50p_fivegram_new_labels[, ])] <- 0
 
-
 #total prob uitrekennen
 w2 = c(0.9,0.1)
 tt = mapply("*",top50p_twogram_new_labels[,c("prob", "prob1")],w2)
@@ -242,8 +239,8 @@ tt = data.frame(tt)
 tt$new = tt$prob + tt$prob1
 top50p_twogram_new_labels = cbind(top50p_twogram_new_labels,tprob = tt$new)
 
-head(top50p_twogram_new_labels[order(-prob),])
-head(top50p_twogram_new_labels[order(-tprob),])
+#head(top50p_twogram_new_labels[order(-prob),])
+#head(top50p_twogram_new_labels[order(-tprob),])
 
 w3 = c(0.9,0.05, 0.05)
 tt = mapply("*",top50p_threegram_new_labels[,c("prob","prob2", "prob1")],w3)
@@ -251,8 +248,8 @@ tt = data.frame(tt)
 tt$new = tt$prob + tt$prob2 + tt$prob1
 top50p_threegram_new_labels = cbind(top50p_threegram_new_labels,tprob = tt$new)
 
-head(top50p_threegram_new_labels[order(-prob),])
-head(top50p_threegram_new_labels[order(-tprob),])
+#head(top50p_threegram_new_labels[order(-prob),])
+#head(top50p_threegram_new_labels[order(-tprob),])
 
 w4 = c(0.8,0.1,0.005,0.005)
 tt = mapply("*",top50p_fourgram_new_labels[,c("prob", "prob3", "prob2", "prob1")],w4)
@@ -260,8 +257,8 @@ tt = data.frame(tt)
 tt$new = tt$prob + tt$prob3 + tt$prob2 + tt$prob1
 top50p_fourgram_new_labels = cbind(top50p_fourgram_new_labels,tprob = tt$new)
 
-head(top50p_fourgram_new_labels[order(-prob),])
-head(top50p_fourgram_new_labels[order(-tprob),])
+#head(top50p_fourgram_new_labels[order(-prob),])
+#head(top50p_fourgram_new_labels[order(-tprob),])
 
 w5 = c(0.7,0.1, 0.1,0.005,0.005)
 tt = mapply("*",top50p_fivegram_new_labels[,c("prob", "prob4", "prob3", "prob2", "prob1")],w5)
@@ -269,8 +266,8 @@ tt = data.frame(tt)
 tt$new = tt$prob + tt$prob4  +tt$prob3 + tt$prob2 + tt$prob1
 top50p_fivegram_new_labels = cbind(top50p_fivegram_new_labels,tprob = tt$new)
 
-head(top50p_fivegram_new_labels[order(-prob),])
-head(top50p_fivegram_new_labels[order(-tprob),])
+#head(top50p_fivegram_new_labels[order(-prob),])
+#head(top50p_fivegram_new_labels[order(-tprob),])
 
 #stopCluster(cl)
 
@@ -349,11 +346,7 @@ next_word = function(s) {
   if (wc > 4) {wc = 4}
   
   if (wc == 4) {
-<<<<<<< HEAD
     nword4(words)
-=======
-      nword4(words)
->>>>>>> 8f8c5b0095e7e9594800710af490dddfab360f15
   }
   else if (wc == 3) {nword3(words)}
   else if (wc == 2) {nword2(words)}
@@ -372,8 +365,8 @@ splitwords<-function(x) {
 
 splitwords(s)
 s = "hi mi for the"
-s= "hello my what thanks for the"
-s= "for the"
+s= "hello my what thanks for... the"
+s= " a bouquet, and a case of"
 
 next_word(s)
 
