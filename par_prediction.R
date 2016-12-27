@@ -65,7 +65,7 @@ create_ngram_table = function(n, zinnen) {
 }
 
 f_create_ngram = function (nl, ds,n, parts) {#number of lines, dataset, # ngram 
-  
+  nl = length(ds[,1])  
   intm_result = parLapply(cl, ds[,],
                           function(x) {
                             library(ngram)
@@ -98,6 +98,20 @@ f_create_ngram = function (nl, ds,n, parts) {#number of lines, dataset, # ngram
   do.call("rbind", result)
 }
 
+count_lines<-function(x) {
+  dfr = data.frame(strsplit(x, "\\. |\\? "), stringsAsFactors = F)
+  colnames(dfr) = "zin"
+  zinnen = cbind(words = apply(dfr, 1, wordcount), dfr)
+  length(zinnen$zin)
+}
+
+count_words<-function(x) {
+  dfr = data.frame(strsplit(x, "\\. |\\? "), stringsAsFactors = F)
+  colnames(dfr) = "zin"
+  zinnen = cbind(words = apply(dfr, 1, wordcount), dfr)
+  sum(zinnen$words)
+}
+
 #top percentage by frequency
 topnperc =  function(df, p,a) { #data frame, percentage, #ngram
   dt = data.table(df)
@@ -119,13 +133,30 @@ topnperc =  function(df, p,a) { #data frame, percentage, #ngram
 
 ##Start processing singlegram
 #load twitter
-nl = 100000
+nl = 10000
 
 #Twitter
-con <- file("final/en_US/en_US.twitter.txt", "r") 
+con <- file("../final/en_US/en_US.twitter.txt", "r") 
 txt = readLines(con, n=nl) 
 close(con)
 df_txt_twitter = data.frame(txt, stringsAsFactors = F) 
+
+#l = sum(apply(df_txt_twitter,1,count_lines))
+
+con <- file("../final/en_US/en_US.news.txt", "r") 
+txt = readLines(con, n=nl) 
+close(con)
+df_txt_news = data.frame(txt, stringsAsFactors = F) 
+
+con <- file("../final/en_US/en_US.blogs.txt", "r") 
+txt = readLines(con, n=nl) 
+close(con)
+df_txt_blog = data.frame(txt, stringsAsFactors = F) 
+#l = sum(apply(df_txt_blog,1,count_lines))
+
+df_txt_twitter = rbind(df_txt_twitter, df_txt_blog)
+df_txt_twitter = rbind(df_txt_twitter, df_txt_news)
+
 
 #prep parralel processing
 # Calculate the number of cores
@@ -148,6 +179,8 @@ top50p_twogram = topnperc(twogram_twitter,30,2)
 top50p_threegram = topnperc(threegram_twitter,20,3)
 top50p_fourgram = topnperc(fourgram_twitter,20,4)
 top50p_fivegram = topnperc(fivegram_twitter,20,5)
+
+head(top50p_threegram)
 
 #add probabilities
 st = sum(singlegram_twitter$n, na.rm = T) 
@@ -198,14 +231,46 @@ top50p_fivegram_new = top50p_fourgram_new_labels[top50p_fivegram] #alles met i. 
 #het 2e en 3e woord
 top50p_fivegram_new_labels = top50p_fivegram_new[,c("i.nr","i.w1","w1", "w2", "w3", "w4", "i.V1", "i.rt", "i.prob", "V1", "prob", "V13", "prob3","V12", "prob2", "V11", "prob1")]
 colnames(top50p_fivegram_new_labels) = c("nr", "w1", "w2", "w3", "w4", "w5", "V1", "rt", "prob","V14", "prob4", "V13", "prob3", "V12", "prob2", "V11", "prob1")
+top50p_fivegram_new_labels[, ][is.na(top50p_fivegram_new_labels[, ])] <- 0
 
 
 #total prob uitrekennen
-w4 = c(1,0,0,0)
+w2 = c(0.9,0.1)
+tt = mapply("*",top50p_twogram_new_labels[,c("prob", "prob1")],w2)
+tt = data.frame(tt)
+tt$new = tt$prob + tt$prob1
+top50p_twogram_new_labels = cbind(top50p_twogram_new_labels,tprob = tt$new)
+
+head(top50p_twogram_new_labels[order(-prob),])
+head(top50p_twogram_new_labels[order(-tprob),])
+
+w3 = c(0.9,0.05, 0.05)
+tt = mapply("*",top50p_threegram_new_labels[,c("prob","prob2", "prob1")],w3)
+tt = data.frame(tt)
+tt$new = tt$prob + tt$prob2 + tt$prob1
+top50p_threegram_new_labels = cbind(top50p_threegram_new_labels,tprob = tt$new)
+
+head(top50p_threegram_new_labels[order(-prob),])
+head(top50p_threegram_new_labels[order(-tprob),])
+
+w4 = c(0.8,0.1,0.005,0.005)
 tt = mapply("*",top50p_fourgram_new_labels[,c("prob", "prob3", "prob2", "prob1")],w4)
 tt = data.frame(tt)
 tt$new = tt$prob + tt$prob3 + tt$prob2 + tt$prob1
 top50p_fourgram_new_labels = cbind(top50p_fourgram_new_labels,tprob = tt$new)
+
+head(top50p_fourgram_new_labels[order(-prob),])
+head(top50p_fourgram_new_labels[order(-tprob),])
+
+w5 = c(0.7,0.1, 0.1,0.005,0.005)
+tt = mapply("*",top50p_fivegram_new_labels[,c("prob", "prob4", "prob3", "prob2", "prob1")],w5)
+tt = data.frame(tt)
+tt$new = tt$prob + tt$prob4  +tt$prob3 + tt$prob2 + tt$prob1
+top50p_fivegram_new_labels = cbind(top50p_fivegram_new_labels,tprob = tt$new)
+
+head(top50p_fivegram_new_labels[order(-prob),])
+head(top50p_fivegram_new_labels[order(-tprob),])
+
 
 #stopCluster(cl)
 
@@ -214,48 +279,95 @@ nword4 = function(words) {
   temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
                                       top50p_fivegram_new_labels$w2==words[2]
                                     & top50p_fivegram_new_labels$w3==words[3]
-                                    & top50p_fivegram_new_labels$w3==words[4]
+                                    & top50p_fivegram_new_labels$w4==words[4]
                                     ,]
-  head(temp[order(-tprob), c("w5", "tprob")],3)
+  if (length(temp$nr) > 1) 
+  {  head(temp[order(-tprob), c("w5", "tprob")],3) }
+  else {
+    temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[2] &
+                                        top50p_fourgram_new_labels$w2==words[3]
+                                      & top50p_fourgram_new_labels$w3==words[4],]
+    if (length(temp$nr) > 1) 
+    {  head(temp[order(-tprob), c("w4", "tprob")],3) }
+    else {
+      temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[3] &
+                                           top50p_threegram_new_labels$w2==words[4]
+                                         ,]
+      if (length(temp$nr) > 1) 
+      {  head(temp[order(-tprob), c("w3", "tprob")],3) }
+      else {
+        temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[4] 
+                                         ,]
+        if (length(temp$nr) > 1) 
+        {  head(temp[order(-tprob), c("w2", "tprob")],3) }
+        else {data.frame(c("the"))}
+      }      
+    }
+  }
 }
 
 nword3 = function(words) {
   temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[1] &
                                       top50p_fourgram_new_labels$w2==words[2]
-                                    & top50p_fourgram_new_labels$w3==words[3]
-                                    ,]
-  head(temp[order(-tprob), c("w4", "tprob")],3)
+                                    & top50p_fourgram_new_labels$w3==words[3],]
+  if (length(temp$nr) > 1) 
+  {  head(temp[order(-tprob), c("w4", "tprob")],3) }
+  else {
+    temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[2] &
+                                         top50p_threegram_new_labels$w2==words[3]
+                                       ,]
+    if (length(temp$nr) > 1) 
+    {  head(temp[order(-tprob), c("w3", "tprob")],3) }
+    else {
+      temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[3] 
+                                       ,]
+      if (length(temp$nr) > 1) 
+      {  head(temp[order(-tprob), c("w2", "tprob")],3) }
+      else {data.frame(c("the"))}
+    }      
+  }
 }
 
 nword2 = function(words) {
   temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[1] &
                                        top50p_threegram_new_labels$w2==words[2]
-                                    ,]
-  head(temp[order(-tprob), c("w3", "tprob")],3)
+                                     ,]
+  if (length(temp$nr) > 1) 
+  {  head(temp[order(-tprob), c("w3", "tprob")],3) }
+  else {
+    temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[2] 
+                                     ,]
+    if (length(temp$nr) > 1) 
+    {  head(temp[order(-tprob), c("w2", "tprob")],3) }
+    else {data.frame(c("the"))}
+  }      
 }
 
 next_word = function(s) {
   words = splitwords(s)
   wc = length(words[])
-  if (wc > 3) {wc = 3}
+  if (wc > 4) {wc = 4}
   
-  if (wc == 3) {
-      result = nword3(words)
-      if (length(result[,1] > 0 )) {print("resultaten")} else {print("geen resultaten")}
-    }
+  if (wc == 4) {
+    nword4(words)
+  }
+  else if (wc == 3) {nword3(words)}
+  else if (wc == 2) {nword2(words)}
 }
 
 splitwords<-function(x) {
   dfr = data.frame(strsplit(x, " "), stringsAsFactors = F)
   colnames(dfr) = "word"
   dfr$word = tolower(dfr$word)
+  dfr$word = gsub("[^[:alnum:]| ]", "",dfr$word)
+  dfr$word = gsub("\\s+", " ",dfr$word)
   l = length(dfr$word)
   b = if(l-3 < 1) {1} else {l-3}
   return(dfr$word[b:l])
 }
 
 splitwords(s)
-s = "my dog is"
+s = "hi mi for the"
 s= "hello my what thanks for the"
-
+s= "for the"
 next_word(s)
