@@ -26,10 +26,11 @@ splitter<-function(x) {
   dfr = data.frame(strsplit(x, "\\. |\\? "), stringsAsFactors = F)
   colnames(dfr) = "zin"
   dfr$zin = tolower(dfr$zin)
+  dfr$zin = gsub("[^[:alnum:]| ]", "",dfr$zin)
+  dfr$zin = gsub("\\s+", " ",dfr$zin)
   zinnen = cbind(words = apply(dfr, 1, wordcount), dfr)
   return(zinnen)
 }
-
 
 create_ngram_table = function(n, zinnen) {
   r = 1
@@ -328,6 +329,8 @@ nword3 = function(words) {
   }
 }
 
+
+
 nword2 = function(words) {
   temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[1] &
                                        top50p_threegram_new_labels$w2==words[2]
@@ -343,13 +346,19 @@ nword2 = function(words) {
   }      
 }
 
+
+
 next_word = function(s) {
   words = splitwords(s)
   wc = length(words[])
   if (wc > 4) {wc = 4}
   
   if (wc == 4) {
+<<<<<<< HEAD
     nword4(words)
+=======
+      nword4(words)
+>>>>>>> 8f8c5b0095e7e9594800710af490dddfab360f15
   }
   else if (wc == 3) {nword3(words)}
   else if (wc == 2) {nword2(words)}
@@ -370,4 +379,8 @@ splitwords(s)
 s = "hi mi for the"
 s= "hello my what thanks for the"
 s= "for the"
+<<<<<<< HEAD
 next_word(s)
+=======
+next_word(s)
+>>>>>>> 8f8c5b0095e7e9594800710af490dddfab360f15
