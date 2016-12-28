@@ -239,17 +239,11 @@ tt = data.frame(tt)
 tt$new = tt$prob + tt$prob1
 top50p_twogram_new_labels = cbind(top50p_twogram_new_labels,tprob = tt$new)
 
-#head(top50p_twogram_new_labels[order(-prob),])
-#head(top50p_twogram_new_labels[order(-tprob),])
-
 w3 = c(0.9,0.05, 0.05)
 tt = mapply("*",top50p_threegram_new_labels[,c("prob","prob2", "prob1")],w3)
 tt = data.frame(tt)
 tt$new = tt$prob + tt$prob2 + tt$prob1
 top50p_threegram_new_labels = cbind(top50p_threegram_new_labels,tprob = tt$new)
-
-#head(top50p_threegram_new_labels[order(-prob),])
-#head(top50p_threegram_new_labels[order(-tprob),])
 
 w4 = c(0.8,0.1,0.005,0.005)
 tt = mapply("*",top50p_fourgram_new_labels[,c("prob", "prob3", "prob2", "prob1")],w4)
@@ -257,17 +251,12 @@ tt = data.frame(tt)
 tt$new = tt$prob + tt$prob3 + tt$prob2 + tt$prob1
 top50p_fourgram_new_labels = cbind(top50p_fourgram_new_labels,tprob = tt$new)
 
-#head(top50p_fourgram_new_labels[order(-prob),])
-#head(top50p_fourgram_new_labels[order(-tprob),])
-
 w5 = c(0.7,0.1, 0.1,0.005,0.005)
 tt = mapply("*",top50p_fivegram_new_labels[,c("prob", "prob4", "prob3", "prob2", "prob1")],w5)
 tt = data.frame(tt)
 tt$new = tt$prob + tt$prob4  +tt$prob3 + tt$prob2 + tt$prob1
 top50p_fivegram_new_labels = cbind(top50p_fivegram_new_labels,tprob = tt$new)
 
-#head(top50p_fivegram_new_labels[order(-prob),])
-#head(top50p_fivegram_new_labels[order(-tprob),])
 
 #stopCluster(cl)
 
@@ -368,5 +357,5 @@ s = "hi mi for the"
 s= "hello my what thanks for... the"
 s= " a bouquet, and a case of"
 
-next_word(s)
+next_word(s)[1,1]
 
