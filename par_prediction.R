@@ -341,6 +341,18 @@ next_word = function(s) {
   else if (wc == 2) {nword2(words)}
 }
 
+next_word_test = function(words) {
+  wc = length(words[])
+  if (wc > 4) {wc = 4}
+  
+  if (wc == 4) {
+    nword4(words)
+  }
+  else if (wc == 3) {nword3(words)}
+  else if (wc == 2) {nword2(words)}
+}
+
+
 splitwords<-function(x) {
   dfr = data.frame(strsplit(x, " "), stringsAsFactors = F)
   colnames(dfr) = "word"
@@ -352,10 +364,28 @@ splitwords<-function(x) {
   return(dfr$word[b:l])
 }
 
-splitwords(s)
+words = splitwords(s)
+str(wordsv)
 s = "hi mi for the"
 s= "hello my what thanks for... the"
 s= " a bouquet, and a case of"
 
 next_word(s)[1,1]
+next_word_test(words=v)
 
+df = head(top50p_fivegram_new_labels[order(-tprob),],1)[,2:5]
+v = as.vector(t(df)[,])
+r = next_word_test(words=v)[1,1]
+o = head(top50p_fivegram_new_labels[order(-tprob),],1)[,6]
+r == o
+
+rs = apply(tail(head(top50p_fivegram_new_labels[order(-tprob),],3000),300)[,2:6],1, function(x) {
+  v = as.vector(t(x)[1:4])
+  r = next_word_test(words=v)[1,1]
+  o = x[5]
+  r == o
+} )
+
+table(rs)
+
+?head
