@@ -292,6 +292,15 @@ nword4 = function(words) {
   }
 }
 
+nword44 = function(words) {
+  temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
+                                      top50p_fivegram_new_labels$w2==words[2]
+                                    & top50p_fivegram_new_labels$w3==words[3]
+                                    & top50p_fivegram_new_labels$w4==words[4]
+                                    ,]
+  length(temp$nr)
+}
+
 nword3 = function(words) {
   temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[1] &
                                       top50p_fourgram_new_labels$w2==words[2]
@@ -386,6 +395,43 @@ rs = apply(tail(head(top50p_fivegram_new_labels[order(-tprob),],3000),300)[,2:6]
   r == o
 } )
 
+ds = tail(head(top50p_fivegram_new_labels[order(-tprob),],3000),300)[,2:6]
+
+clusterExport(cl=cl, varlist=c("next_word_test", "nword44", "top50p_fivegram_new_labels", "top50p_fourgram_new_labels", 
+                               "top50p_threegram_new_labels", "top50p_twogram_new_labels"))
+head(top50p_twogram_new_labels)
+
+intm_result = parApply(cl, ds[1,],1,
+                        function(x) {
+                          v = as.vector(t(x)[1:4])
+                          r = next_word_test(words=v)[1,1]
+                          o = x[5]
+                          r == o
+                        })
+
+
+
+nword44 = function(words) {
+  temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
+                                      top50p_fivegram_new_labels$w2==words[2]
+                                    & top50p_fivegram_new_labels$w3==words[3]
+                                    & top50p_fivegram_new_labels$w4==words[4]
+                                    ,]
+  temp$w5
+}
+
+clusterExport(cl=cl, varlist=c("nword44"))
+
+
+#debug
+intm_result = parApply(cl, ds[1:50,], 1,
+                        function(x) {
+                          v = as.vector(t(x)[1:4])
+                          r = nword44(words=v)
+                          r[1]
+                        })
+str(intm_result)
+?parSapply
 table(rs)
 
 ?head
