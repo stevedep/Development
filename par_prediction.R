@@ -174,19 +174,19 @@ top50p_fourgram = topnperc(fourgram_twitter,30,4)
 top50p_fivegram = topnperc(fivegram_twitter,30,5)
 
 #add probabilities
-st = sum(singlegram_twitter$n, na.rm = T) 
+st = sum(singlegram_twitter$V1, na.rm = T) 
 top50p_singlegram = cbind(top50p_singlegram, prob = top50p_singlegram$V1 / st)
 
-tt = sum(twogram_twitter$n, na.rm = T) 
+tt = sum(twogram_twitter$V1, na.rm = T) 
 top50p_twogram = cbind(top50p_twogram, prob = top50p_twogram$V1 / st)
 
-trt = sum(threegram_twitter$n, na.rm = T) 
+trt = sum(threegram_twitter$V1, na.rm = T) 
 top50p_threegram = cbind(top50p_threegram, prob = top50p_threegram$V1 / st)
 
-frt = sum(fourgram_twitter$n, na.rm = T) 
+frt = sum(fourgram_twitter$V1, na.rm = T) 
 top50p_fourgram = cbind(top50p_fourgram, prob = top50p_fourgram$V1 / st)
 
-frt = sum(fivegram_twitter$n, na.rm = T) 
+frt = sum(fivegram_twitter$V1, na.rm = T) 
 top50p_fivegram = cbind(top50p_fivegram, prob = top50p_fivegram$V1 / st)
 
 setkey(top50p_twogram,w2)
@@ -379,7 +379,6 @@ nword4 = function(words) {
   }
 }
 
-
 next_word_test = function(words) {
   wc = length(words[])
   if (wc > 4) {wc = 4}
@@ -388,7 +387,6 @@ next_word_test = function(words) {
     #nword4t(words)
   }
 }
-
 
 nword4t = function(words) {
   temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
@@ -422,7 +420,8 @@ nword4t = function(words) {
 }
 
 clusterExport(cl=cl, varlist=c("next_word_test","nword4t", "nword4", "tprob_update"))
-clusterExport(cl=cl, varlist=c("next_word_test", "nword4t", "nword4", "top50p_fivegram_new_labels", "top50p_fourgram_new_labels", 
+clusterExport(cl=cl, varlist=c("next_word_test", "nword4t", "nword4", "tprob_update",
+                               "top50p_fivegram_new_labels", "top50p_fourgram_new_labels", 
                                "top50p_threegram_new_labels", "top50p_twogram_new_labels"))
 
 #tprob_update(w2,w3,w4,w5)
@@ -431,46 +430,56 @@ w3 = c(0.9,0.05, 0.05)
 w4 = c(0.8,0.1,0.005,0.005)
 w5 = c(0.7,0.1, 0.1,0.005,0.005)
 
+#init
 w2 = c(1,0)
 w3 = c(1,0,0)
 w4 = c(1,0,0,0)
 w5 = c(1,0,0,0,0)
-
+f=40
+r = c(0,0,0,0,0,0)
 params <- data.frame(p1 = double(4), p2 = double(4),p3 = double(4),p4 = double(4),p5 = double(4))
 params$p1 = 1
 
-
+#loop
+for (j in 1:10) {
 for (i in c(1:4)) {
   if (i==1) {
-  params[i:4,1] = params[i:4,1] - 1/10
-  params[i:4,2] = params[i:4,2] + 1/10  
+  params[i:4,1] = params[i:4,1] - 1/f
+  params[i:4,2] = params[i:4,2] + 1/f  
   }
   else if(i==2) {
-    params[i:4,2] = params[i:4,2] - 1/20
-    params[i:4,3] = params[i:4,3] + 1/20  
+    params[i:4,2] = params[i:4,2] - 1/(f*2)
+    params[i:4,3] = params[i:4,3] + 1/(f*2)  
   }
   else if(i==3) {
-    params[i:4,3] = params[i:4,3] - 1/40
-    params[i:4,4] = params[i:4,4] + 1/40  
+    params[i:4,3] = params[i:4,3] - 1/(f*4)
+    params[i:4,4] = params[i:4,4] + 1/(f*4)  
   }
   else if(i==4) {
-    params[i:4,4] = params[i:4,4] - 1/80
-    params[i:4,5] = params[i:4,5] + 1/80  
+    params[i:4,4] = params[i:4,4] - 1/(f*8)
+    params[i:4,5] = params[i:4,5] + 1/(f*8)  
   }
 }
 
 w2 = params[1,1:2]
-w2 = v = as.vector(t(w2)[1:2])
+w2 = as.vector(t(w2)[1:2])
+w3 = params[2,1:3]
+w3 = as.vector(t(w3)[1:3])
+w4 = params[3,1:4]
+w4 = as.vector(t(w4)[1:4])
+w5 = params[4,1:5]
+w5 = as.vector(t(w5)[1:5])
 
 clusterCall(cl,tprob_update, w2,w3,w4,w5)
 
-intm_result = parApply(cl, fivegram_news[1:1000,2:6],1,
+intm_result = parApply(cl, fivegram_news[1:300,2:6],1,
                         function(x) {
                           v = as.vector(t(x)[1:4])
                           r = next_word_test(words=v)[1,1]
                           o = x[5]
                           r == o
                         })
-table(intm_result)
-sum(intm_result)
+r = rbind(r, c(sum(intm_result), w5))
+}
+r
 #stopCluster(cl)
