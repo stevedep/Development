@@ -166,7 +166,6 @@ threegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 3, parts = 63)
 fourgram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 4, parts = 63)
 fivegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 5, parts = 63)
 
-
 top50p_singlegram = topnperc(singlegram_twitter,70,1)
 top50p_twogram = topnperc(twogram_twitter,30,2)
 top50p_threegram = topnperc(threegram_twitter,30,3)
@@ -174,19 +173,19 @@ top50p_fourgram = topnperc(fourgram_twitter,30,4)
 top50p_fivegram = topnperc(fivegram_twitter,30,5)
 
 #add probabilities
-st = sum(singlegram_twitter$V1, na.rm = T) 
+st = sum(top50p_singlegram$V1, na.rm = T) 
 top50p_singlegram = cbind(top50p_singlegram, prob = top50p_singlegram$V1 / st)
 
-tt = sum(twogram_twitter$V1, na.rm = T) 
+tt = sum(top50p_twogram$V1, na.rm = T) 
 top50p_twogram = cbind(top50p_twogram, prob = top50p_twogram$V1 / st)
 
-trt = sum(threegram_twitter$V1, na.rm = T) 
+trt = sum(top50p_threegram$V1, na.rm = T) 
 top50p_threegram = cbind(top50p_threegram, prob = top50p_threegram$V1 / st)
 
-frt = sum(fourgram_twitter$V1, na.rm = T) 
+frt = sum(top50p_fourgram$V1, na.rm = T) 
 top50p_fourgram = cbind(top50p_fourgram, prob = top50p_fourgram$V1 / st)
 
-frt = sum(fivegram_twitter$V1, na.rm = T) 
+frt = sum(top50p_fivegram$V1, na.rm = T) 
 top50p_fivegram = cbind(top50p_fivegram, prob = top50p_fivegram$V1 / st)
 
 setkey(top50p_twogram,w2)
@@ -471,8 +470,8 @@ w5 = params[4,1:5]
 w5 = as.vector(t(w5)[1:5])
 
 clusterCall(cl,tprob_update, w2,w3,w4,w5)
-
-intm_result = parApply(cl, fivegram_news[1:300,2:6],1,
+intm_result = NULL 
+intm_result = parApply(cl, fivegram_news[1:1000,2:6],1,
                         function(x) {
                           v = as.vector(t(x)[1:4])
                           r = next_word_test(words=v)[1,1]
