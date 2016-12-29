@@ -282,7 +282,7 @@ tprob_update = function(w2,w3,w4,w5) {
   tt$new = tt$prob + tt$prob4  +tt$prob3 + tt$prob2 + tt$prob1
   top50p_fivegram_new_labels$tprob <<- tt$new
   
-  NULL
+  sum(top50p_fivegram_new_labels$tprob)
 }
 
 nword3 = function(words) {
@@ -435,6 +435,32 @@ w2 = c(1,0)
 w3 = c(1,0,0)
 w4 = c(1,0,0,0)
 w5 = c(1,0,0,0,0)
+
+params <- data.frame(p1 = double(4), p2 = double(4),p3 = double(4),p4 = double(4),p5 = double(4))
+params$p1 = 1
+
+
+for (i in c(1:4)) {
+  if (i==1) {
+  params[i:4,1] = params[i:4,1] - 1/10
+  params[i:4,2] = params[i:4,2] + 1/10  
+  }
+  else if(i==2) {
+    params[i:4,2] = params[i:4,2] - 1/20
+    params[i:4,3] = params[i:4,3] + 1/20  
+  }
+  else if(i==3) {
+    params[i:4,3] = params[i:4,3] - 1/40
+    params[i:4,4] = params[i:4,4] + 1/40  
+  }
+  else if(i==4) {
+    params[i:4,4] = params[i:4,4] - 1/80
+    params[i:4,5] = params[i:4,5] + 1/80  
+  }
+}
+
+w2 = params[1,1:2]
+w2 = v = as.vector(t(w2)[1:2])
 
 clusterCall(cl,tprob_update, w2,w3,w4,w5)
 
