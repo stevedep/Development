@@ -158,7 +158,6 @@ df_txt_blog = data.frame(txt, stringsAsFactors = F)
 df_txt_twitter = rbind(df_txt_twitter, df_txt_blog)
 df_txt_twitter = rbind(df_txt_twitter, df_txt_news)
 
-
 #prep parralel processing
 # Calculate the number of cores
 no_cores <- detectCores() - 1
@@ -166,7 +165,6 @@ no_cores <- detectCores() - 1
 cl <- makeCluster(no_cores)
 registerDoMC(no_cores) 
 clusterExport(cl=cl, varlist=c("splitter", "create_ngram_table"))
-
 
 singlegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 63)
 twogram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 2, parts = 63)
@@ -260,7 +258,6 @@ top50p_fivegram_new_labels = cbind(top50p_fivegram_new_labels,tprob = tt$new)
 
 #stopCluster(cl)
 
-#five labels hebben we nog niet gemaakt. 
 nword4 = function(words) {
   temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
                                       top50p_fivegram_new_labels$w2==words[2]
@@ -268,37 +265,28 @@ nword4 = function(words) {
                                     & top50p_fivegram_new_labels$w4==words[4]
                                     ,]
   if (length(temp$nr) > 1) 
-  {  head(temp[order(-tprob), c("w5", "tprob")],3) }
+  {  head(temp[order(-temp$tprob), c("w5", "tprob")],3) }
   else {
     temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[2] &
                                         top50p_fourgram_new_labels$w2==words[3]
                                       & top50p_fourgram_new_labels$w3==words[4],]
     if (length(temp$nr) > 1) 
-    {  head(temp[order(-tprob), c("w4", "tprob")],3) }
+    {  head(temp[order(-temp$tprob), c("w4", "tprob")],3) }
     else {
       temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[3] &
                                            top50p_threegram_new_labels$w2==words[4]
                                          ,]
       if (length(temp$nr) > 1) 
-      {  head(temp[order(-tprob), c("w3", "tprob")],3) }
+      {  head(temp[order(-temp$tprob), c("w3", "tprob")],3) }
       else {
         temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[4] 
                                          ,]
         if (length(temp$nr) > 1) 
-        {  head(temp[order(-tprob), c("w2", "tprob")],3) }
+        {  head(temp[order(-temp$tprob), c("w2", "tprob")],3) }
         else {data.frame(c("the"))}
       }      
     }
   }
-}
-
-nword44 = function(words) {
-  temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
-                                      top50p_fivegram_new_labels$w2==words[2]
-                                    & top50p_fivegram_new_labels$w3==words[3]
-                                    & top50p_fivegram_new_labels$w4==words[4]
-                                    ,]
-  length(temp$nr)
 }
 
 nword3 = function(words) {
@@ -397,41 +385,16 @@ rs = apply(tail(head(top50p_fivegram_new_labels[order(-tprob),],3000),300)[,2:6]
 
 ds = tail(head(top50p_fivegram_new_labels[order(-tprob),],3000),300)[,2:6]
 
-clusterExport(cl=cl, varlist=c("next_word_test", "nword44", "top50p_fivegram_new_labels", "top50p_fourgram_new_labels", 
+clusterExport(cl=cl, varlist=c("next_word_test", "nword4", "top50p_fivegram_new_labels", "top50p_fourgram_new_labels", 
                                "top50p_threegram_new_labels", "top50p_twogram_new_labels"))
-head(top50p_twogram_new_labels)
 
-intm_result = parApply(cl, ds[1,],1,
+clusterExport(cl=cl, varlist=c("nword4"))
+
+intm_result = parApply(cl, ds[,],1,
                         function(x) {
                           v = as.vector(t(x)[1:4])
                           r = next_word_test(words=v)[1,1]
                           o = x[5]
                           r == o
                         })
-
-
-
-nword44 = function(words) {
-  temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
-                                      top50p_fivegram_new_labels$w2==words[2]
-                                    & top50p_fivegram_new_labels$w3==words[3]
-                                    & top50p_fivegram_new_labels$w4==words[4]
-                                    ,]
-  temp$w5
-}
-
-clusterExport(cl=cl, varlist=c("nword44"))
-
-
-#debug
-intm_result = parApply(cl, ds[1:50,], 1,
-                        function(x) {
-                          v = as.vector(t(x)[1:4])
-                          r = nword44(words=v)
-                          r[1]
-                        })
-str(intm_result)
-?parSapply
-table(rs)
-
-?head
+table(intm_result)
