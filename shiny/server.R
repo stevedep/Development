@@ -1,7 +1,7 @@
-#load("top50p_fivegram_new_labels.Rda")
-#load("top50p_fourgram_new_labels.Rda")
-#load("top50p_threegram_new_labels.Rda")
-#load("top50p_twogram_new_labels.Rda")
+load("top50p_fivegram_new_labels.Rda")
+load("top50p_fourgram_new_labels.Rda")
+load("top50p_threegram_new_labels.Rda")
+load("top50p_twogram_new_labels.Rda")
 
 
 nword3 = function(words) {
@@ -109,7 +109,7 @@ shinyServer(function(input, output) {
   output$Prediction <- renderText(predictionResp()[1,1])
   output$PredictionTable = renderDataTable({
     predictionResp()
-  }, options = list(orderClasses = TRUE))
+  }, options = list(orderClasses = F, searching = FALSE, paging = FALSE))
   
 }
 )
