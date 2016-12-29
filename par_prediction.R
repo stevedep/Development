@@ -11,8 +11,6 @@ library(reshape)
 library(foreach)
 library(doMC)
 
-#test
-
 #download file
 url = "http://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip" 
 destfile = "Coursera-SwiftKey.zip"
@@ -131,18 +129,15 @@ topnperc =  function(df, p,a) { #data frame, percentage, #ngram
   q1n[1:l,]
 }
 
-
 ##Start processing singlegram
 #load twitter
-nl = 10000
+nl = 11
 
 #Twitter
 con <- file("../final/en_US/en_US.twitter.txt", "r") 
 txt = readLines(con, n=nl) 
 close(con)
 df_txt_twitter = data.frame(txt, stringsAsFactors = F) 
-
-#l = sum(apply(df_txt_twitter,1,count_lines))
 
 con <- file("../final/en_US/en_US.news.txt", "r") 
 txt = readLines(con, n=nl) 
@@ -153,7 +148,6 @@ con <- file("../final/en_US/en_US.blogs.txt", "r")
 txt = readLines(con, n=nl) 
 close(con)
 df_txt_blog = data.frame(txt, stringsAsFactors = F) 
-#l = sum(apply(df_txt_blog,1,count_lines))
 
 df_txt_twitter = rbind(df_txt_twitter, df_txt_blog)
 df_txt_twitter = rbind(df_txt_twitter, df_txt_news)
@@ -171,15 +165,13 @@ twogram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 2, parts = 63)
 threegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 3, parts = 63)
 fourgram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 4, parts = 63)
 fivegram_twitter = f_create_ngram(nl,ds = df_txt_twitter,n = 5, parts = 63)
-#system.time(f_create_ngram(nl,ds = df_txt_twitter,n = 1, parts = 63))
+
 
 top50p_singlegram = topnperc(singlegram_twitter,70,1)
 top50p_twogram = topnperc(twogram_twitter,30,2)
 top50p_threegram = topnperc(threegram_twitter,30,3)
 top50p_fourgram = topnperc(fourgram_twitter,30,4)
 top50p_fivegram = topnperc(fivegram_twitter,30,5)
-
-#head(top50p_threegram)
 
 #add probabilities
 st = sum(singlegram_twitter$n, na.rm = T) 
@@ -231,62 +223,66 @@ colnames(top50p_fivegram_new_labels) = c("nr", "w1", "w2", "w3", "w4", "w5", "V1
 top50p_fivegram_new_labels[, ][is.na(top50p_fivegram_new_labels[, ])] <- 0
 
 #total prob uitrekennen
-w2 = c(0.9,0.1)
+w2 = c(1,0)
+w3 = c(0.9,0.05, 0.05)
+w4 = c(0.8,0.1,0.005,0.005)
+w5 = c(0.7,0.1, 0.1,0.005,0.005)
+
+tprob_add = function(w2,w3,w4,w5) {
 tt = mapply("*",top50p_twogram_new_labels[,c("prob", "prob1")],w2)
 tt = data.frame(tt)
+tt[, ][is.na(tt[, ])] <- 0
 tt$new = tt$prob + tt$prob1
-top50p_twogram_new_labels = cbind(top50p_twogram_new_labels,tprob = tt$new)
+top50p_twogram_new_labels <<- cbind(top50p_twogram_new_labels,tprob = tt$new)
 
-w3 = c(0.9,0.05, 0.05)
 tt = mapply("*",top50p_threegram_new_labels[,c("prob","prob2", "prob1")],w3)
 tt = data.frame(tt)
+tt[, ][is.na(tt[, ])] <- 0
 tt$new = tt$prob + tt$prob2 + tt$prob1
-top50p_threegram_new_labels = cbind(top50p_threegram_new_labels,tprob = tt$new)
+top50p_threegram_new_labels <<- cbind(top50p_threegram_new_labels,tprob = tt$new)
 
-w4 = c(0.8,0.1,0.005,0.005)
 tt = mapply("*",top50p_fourgram_new_labels[,c("prob", "prob3", "prob2", "prob1")],w4)
 tt = data.frame(tt)
+tt[, ][is.na(tt[, ])] <- 0
 tt$new = tt$prob + tt$prob3 + tt$prob2 + tt$prob1
-top50p_fourgram_new_labels = cbind(top50p_fourgram_new_labels,tprob = tt$new)
+top50p_fourgram_new_labels <<- cbind(top50p_fourgram_new_labels,tprob = tt$new)
 
-w5 = c(0.7,0.1, 0.1,0.005,0.005)
 tt = mapply("*",top50p_fivegram_new_labels[,c("prob", "prob4", "prob3", "prob2", "prob1")],w5)
 tt = data.frame(tt)
+tt[, ][is.na(tt[, ])] <- 0
 tt$new = tt$prob + tt$prob4  +tt$prob3 + tt$prob2 + tt$prob1
-top50p_fivegram_new_labels = cbind(top50p_fivegram_new_labels,tprob = tt$new)
+top50p_fivegram_new_labels <<- cbind(top50p_fivegram_new_labels,tprob = tt$new)
+}
 
+tprob_add(w2,w3,w4,w5)
+tprob_update(w2,w3,w4,w5)
 
-#stopCluster(cl)
-
-nword4 = function(words) {
-  temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
-                                      top50p_fivegram_new_labels$w2==words[2]
-                                    & top50p_fivegram_new_labels$w3==words[3]
-                                    & top50p_fivegram_new_labels$w4==words[4]
-                                    ,]
-  if (length(temp$nr) > 1) 
-  {  head(temp[order(-temp$tprob), c("w5", "tprob")],3) }
-  else {
-    temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[2] &
-                                        top50p_fourgram_new_labels$w2==words[3]
-                                      & top50p_fourgram_new_labels$w3==words[4],]
-    if (length(temp$nr) > 1) 
-    {  head(temp[order(-temp$tprob), c("w4", "tprob")],3) }
-    else {
-      temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[3] &
-                                           top50p_threegram_new_labels$w2==words[4]
-                                         ,]
-      if (length(temp$nr) > 1) 
-      {  head(temp[order(-temp$tprob), c("w3", "tprob")],3) }
-      else {
-        temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[4] 
-                                         ,]
-        if (length(temp$nr) > 1) 
-        {  head(temp[order(-temp$tprob), c("w2", "tprob")],3) }
-        else {data.frame(c("the"))}
-      }      
-    }
-  }
+tprob_update = function(w2,w3,w4,w5) {
+  tt = mapply("*",top50p_twogram_new_labels[,c("prob", "prob1")],w2)
+  tt = data.frame(tt)
+  tt[, ][is.na(tt[, ])] <- 0
+  tt$new = tt$prob + tt$prob1
+  top50p_twogram_new_labels$tprob <<- tt$new
+  
+  tt = mapply("*",top50p_threegram_new_labels[,c("prob","prob2", "prob1")],w3)
+  tt = data.frame(tt)
+  tt[, ][is.na(tt[, ])] <- 0
+  tt$new = tt$prob + tt$prob2 + tt$prob1
+  top50p_threegram_new_labels$tprob <<- tt$new
+  
+  tt = mapply("*",top50p_fourgram_new_labels[,c("prob", "prob3", "prob2", "prob1")],w4)
+  tt = data.frame(tt)
+  tt[, ][is.na(tt[, ])] <- 0
+  tt$new = tt$prob + tt$prob3 + tt$prob2 + tt$prob1
+  top50p_fourgram_new_labels$tprob <<- tt$new
+  
+  tt = mapply("*",top50p_fivegram_new_labels[,c("prob", "prob4", "prob3", "prob2", "prob1")],w5)
+  tt = data.frame(tt)
+  tt[, ][is.na(tt[, ])] <- 0
+  tt$new = tt$prob + tt$prob4  +tt$prob3 + tt$prob2 + tt$prob1
+  top50p_fivegram_new_labels$tprob <<- tt$new
+  
+  NULL
 }
 
 nword3 = function(words) {
@@ -338,18 +334,6 @@ next_word = function(s) {
   else if (wc == 2) {nword2(words)}
 }
 
-next_word_test = function(words) {
-  wc = length(words[])
-  if (wc > 4) {wc = 4}
-  
-  if (wc == 4) {
-    nword4(words)
-  }
-  else if (wc == 3) {nword3(words)}
-  else if (wc == 2) {nword2(words)}
-}
-
-
 splitwords<-function(x) {
   dfr = data.frame(strsplit(x, " "), stringsAsFactors = F)
   colnames(dfr) = "word"
@@ -361,36 +345,100 @@ splitwords<-function(x) {
   return(dfr$word[b:l])
 }
 
-words = splitwords(s)
-str(wordsv)
-s = "hi mi for the"
-s= "hello my what thanks for... the"
-s= " a bouquet, and a case of"
+ds = head(top50p_fivegram_new_labels[order(tprob),],1000)[,2:6]
+fivegram_news = f_create_ngram(nl,ds = tail(df_txt_news,100),n = 5, parts = no_cores)
 
-next_word(s)[1,1]
-next_word_test(words=v)
+nword4 = function(words) {
+  temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
+                                      top50p_fivegram_new_labels$w2==words[2]
+                                    & top50p_fivegram_new_labels$w3==words[3]
+                                    & top50p_fivegram_new_labels$w4==words[4]
+                                    ,]
+  if (length(temp$nr) >= 1) 
+  {  head(temp[order(-temp$tprob), c("w5", "tprob")],3) }
+  else {
+    temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[2] &
+                                        top50p_fourgram_new_labels$w2==words[3]
+                                      & top50p_fourgram_new_labels$w3==words[4],]
+    if (length(temp$nr) >= 1) 
+    {  head(temp[order(-temp$tprob), c("w4", "tprob")],3) }
+    else {
+      temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[3] &
+                                           top50p_threegram_new_labels$w2==words[4]
+                                         ,]
+      if (length(temp$nr) >= 1) 
+      {  head(temp[order(-temp$tprob), c("w3", "tprob")],3) }
+      else {
+        temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[4] 
+                                         ,]
+        if (length(temp$nr) >= 1) 
+        {  head(temp[order(-temp$tprob), c("w2", "tprob")],3) }
+        else {data.frame(c("the"))}
+      }      
+    }
+  }
+}
 
-df = head(top50p_fivegram_new_labels[order(-tprob),],1)[,2:5]
-v = as.vector(t(df)[,])
-r = next_word_test(words=v)[1,1]
-o = head(top50p_fivegram_new_labels[order(-tprob),],1)[,6]
-r == o
 
-rs = apply(tail(head(top50p_fivegram_new_labels[order(-tprob),],3000),300)[,2:6],1, function(x) {
-  v = as.vector(t(x)[1:4])
-  r = next_word_test(words=v)[1,1]
-  o = x[5]
-  r == o
-} )
+next_word_test = function(words) {
+  wc = length(words[])
+  if (wc > 4) {wc = 4}
+  if (wc == 4) {
+    nword4t(words)
+    #nword4t(words)
+  }
+}
 
-ds = tail(head(top50p_fivegram_new_labels[order(-tprob),],3000),300)[,2:6]
 
-clusterExport(cl=cl, varlist=c("next_word_test", "nword4", "top50p_fivegram_new_labels", "top50p_fourgram_new_labels", 
+nword4t = function(words) {
+  temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
+                                      top50p_fivegram_new_labels$w2==words[2]
+                                    & top50p_fivegram_new_labels$w3==words[3]
+                                    & top50p_fivegram_new_labels$w4==words[4]
+                                    ,]
+  if (length(temp$nr) > 1) 
+  {  head(temp[order(-temp$tprob), c("w5", "tprob")],3) }
+  else {
+    temp = top50p_fourgram_new_labels[top50p_fourgram_new_labels$w1==words[2] &
+                                        top50p_fourgram_new_labels$w2==words[3]
+                                      & top50p_fourgram_new_labels$w3==words[4],]
+    if (length(temp$nr) > 1) 
+    {  head(temp[order(-temp$tprob), c("w4", "tprob")],3) }
+    else {
+      temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[3] &
+                                           top50p_threegram_new_labels$w2==words[4]
+                                         ,]
+      if (length(temp$nr) > 1) 
+      {  head(temp[order(-temp$tprob), c("w3", "tprob")],3) }
+      else {
+        temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[4] 
+                                         ,]
+        if (length(temp$nr) > 1) 
+        {  head(temp[order(-temp$tprob), c("w2", "tprob")],3) }
+        else {data.frame(c("the"))}
+      }      
+    }
+  }  
+}
+
+clusterExport(cl=cl, varlist=c("next_word_test","nword4t", "nword4", "tprob_update"))
+clusterExport(cl=cl, varlist=c("next_word_test", "nword4t", "nword4", "top50p_fivegram_new_labels", "top50p_fourgram_new_labels", 
                                "top50p_threegram_new_labels", "top50p_twogram_new_labels"))
 
-clusterExport(cl=cl, varlist=c("nword4"))
+#tprob_update(w2,w3,w4,w5)
+w2 = c(1,0)
+w3 = c(0.9,0.05, 0.05)
+w4 = c(0.8,0.1,0.005,0.005)
+w5 = c(0.7,0.1, 0.1,0.005,0.005)
 
-intm_result = parApply(cl, ds[,],1,
+w2 = c(1,0)
+w3 = c(1,0,0)
+w4 = c(1,0,0,0)
+w5 = c(1,0,0,0,0)
+
+clusterCall(cl,tprob_update, w2,w3,w4,w5)
+
+intm_result = parApply(cl, fivegram_news[1:1000,2:6],1,
                         function(x) {
                           v = as.vector(t(x)[1:4])
                           r = next_word_test(words=v)[1,1]
@@ -398,3 +446,5 @@ intm_result = parApply(cl, ds[,],1,
                           r == o
                         })
 table(intm_result)
+sum(intm_result)
+#stopCluster(cl)
