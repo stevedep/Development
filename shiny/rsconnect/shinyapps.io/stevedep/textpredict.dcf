@@ -1,0 +1,10 @@
+name: textpredict
+title:
+account: stevedep
+server: shinyapps.io
+appId: 148081
+bundleId: 663846
+url: https://stevedep.shinyapps.io/textpredict/
+when: 1483035074.98649
+asMultiple: FALSE
+asStatic: FALSE

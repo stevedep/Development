@@ -1,0 +1,10 @@
+name: test
+title:
+account: stevedep
+server: shinyapps.io
+appId: 148057
+bundleId: 663718
+url: https://stevedep.shinyapps.io/test/
+when: 1483025923.97516
+asMultiple: FALSE
+asStatic: FALSE

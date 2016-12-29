@@ -289,18 +289,18 @@ nword3 = function(words) {
                                       top50p_fourgram_new_labels$w2==words[2]
                                     & top50p_fourgram_new_labels$w3==words[3],]
   if (length(temp$nr) > 1) 
-  {  head(temp[order(-tprob), c("w4", "tprob")],3) }
+  {  head(temp[order(-temp$tprob), c("w4", "tprob")],3) }
   else {
     temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[2] &
                                          top50p_threegram_new_labels$w2==words[3]
                                        ,]
     if (length(temp$nr) > 1) 
-    {  head(temp[order(-tprob), c("w3", "tprob")],3) }
+    {  head(temp[order(-temp$tprob), c("w3", "tprob")],3) }
     else {
       temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[3] 
                                        ,]
       if (length(temp$nr) > 1) 
-      {  head(temp[order(-tprob), c("w2", "tprob")],3) }
+      {  head(temp[order(-temp$tprob), c("w2", "tprob")],3) }
       else {data.frame(c("the"))}
     }      
   }
@@ -310,13 +310,13 @@ nword2 = function(words) {
   temp = top50p_threegram_new_labels[top50p_threegram_new_labels$w1==words[1] &
                                        top50p_threegram_new_labels$w2==words[2]
                                      ,]
-  if (length(temp$nr) > 1) 
-  {  head(temp[order(-tprob), c("w3", "tprob")],3) }
+  if (length(temp$nr) >= 1) 
+  {  head(temp[order(-temp$tprob), c("w3", "tprob")],3) }
   else {
     temp = top50p_twogram_new_labels[top50p_twogram_new_labels$w1==words[2] 
                                      ,]
-    if (length(temp$nr) > 1) 
-    {  head(temp[order(-tprob), c("w2", "tprob")],3) }
+    if (length(temp$nr) >= 1) 
+    {  head(temp[order(-temp$tprob), c("w2", "tprob")],3) }
     else {data.frame(c("the"))}
   }      
 }
@@ -343,9 +343,6 @@ splitwords<-function(x) {
   b = if(l-3 < 1) {1} else {l-3}
   return(dfr$word[b:l])
 }
-
-ds = head(top50p_fivegram_new_labels[order(tprob),],1000)[,2:6]
-fivegram_news = f_create_ngram(nl,ds = tail(df_txt_news,100),n = 5, parts = no_cores)
 
 nword4 = function(words) {
   temp = top50p_fivegram_new_labels[top50p_fivegram_new_labels$w1==words[1] &
@@ -377,6 +374,11 @@ nword4 = function(words) {
     }
   }
 }
+
+ds = head(top50p_fivegram_new_labels[order(tprob),],1000)[,2:6]
+fivegram_news = f_create_ngram(nl,ds = tail(df_txt_news,100),n = 5, parts = no_cores)
+
+
 
 next_word_test = function(words) {
   wc = length(words[])
@@ -481,4 +483,8 @@ intm_result = parApply(cl, fivegram_news[1:1000,2:6],1,
 r = rbind(r, c(sum(intm_result), w5))
 }
 r
+
+s= "this is a great"
+str(s)
+next_word(s)[1,1]
 #stopCluster(cl)
