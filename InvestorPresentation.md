@@ -15,7 +15,7 @@ The next slides will explain;
 
 - The approach
 - Algorithm and fine tuning
-- Results and recommenations
+- Results and recommendations
 
 Approach
 ========================================================
@@ -33,15 +33,31 @@ left: 60%
 
 Algorithm
 ========================================================
+<small>
+Basic principle; f.e. 2 words are entered. These 2 words are used as input to a 3 gram. The 3rd word with the highest likelihood is presented. Same principle applies for 3 and 4 words.
 
 Katz Back-off Model was used to deal with unseen ngrams. When f.e. no 5gram was found, an attempt will be made with a 4 gram, etc. Finally the word 'the' will be presented if all else fails. 
 
-Additionaly, Interpolation by Jelinek and Mercer (1980) was used. This method uses the probability of a lower ngram when determining the probability. The probability of the lower ngram is given a weight (lambda). 
+Additionally, Interpolation by Jelinek and Mercer (1980) was used. This method uses the probability of a lower ngram when determining the probability. The probability of the lower ngram is given a weight (lambda). 
 
-Supprisingly the interpolation method did not increase accuracy! Accuracy improved a bit when giving a 4gram a bit more weight when using a 5gram. 
-Many values were evaluated by incrementally adding more weight to the lower ngrams. 
+Surprisingly the interpolation method did not increase accuracy! Accuracy improved a bit when giving a 4gram a bit more weight when using a 5gram. 
+Many values were evaluated by incrementally adding more weight to the lower ngrams.
+</small>
 
-Results and recommenations
+Results and recommendations
 ========================================================
+<small>
+The application can be viewed [here]. Please enter text (at least two words). And press submit. The most likely word is presented below. A table with the three most likely words is presented as well. 
 
-The application can be viewed here. 
+Lessons learned:
+- Use standard packages for performance. 
+- Parallel computing with cloud server works well. 
+- Interpolation adds little value (after initial testing)
+- With only 50mb a large proportion of ngrams are available.
+
+Recommendations:
+  - ML to determine lamba values with interpolation.
+  - Evaluate dynamic lamba values based on ngram frequency.
+</small>
+
+[here]: https://stevedep.shinyapps.io/textpredict/ "Text prediction app"
